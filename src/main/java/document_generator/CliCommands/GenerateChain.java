@@ -12,6 +12,7 @@ import document_generator.Models.ForwardConnectorMetadata;
 import document_generator.ProvenanceStorageClient;
 import org.openprovenance.prov.interop.InteropFramework;
 import org.openprovenance.prov.model.Bundle;
+import org.openprovenance.prov.model.Document;
 import org.openprovenance.prov.model.QualifiedName;
 import org.openprovenance.prov.model.Statement;
 import org.openprovenance.prov.model.interop.Formats;
@@ -35,7 +36,7 @@ public class GenerateChain implements Runnable {
     @Option(names = {"-s", "--storage-base-url"}, required = true, defaultValue = "http://prov-storage-hospital:8000/", description = "base url of prov storage")
     String storageUrlBase;
 
-    @Option(names = {"-o", "--bundle-name"}, required = true, defaultValue = "test-ah", description = "base of the bundle name")
+    @Option(names = {"-o", "--bundle-name"}, required = true, defaultValue = "test-ap", description = "base of the bundle name")
     String bundleNameBase;
 
     @Option(names = {"-C", "--directory"}, required = true, description = "bundles output directory")
@@ -168,6 +169,10 @@ public class GenerateChain implements Runnable {
                 );
             }
         }
+        redundantConnectors.addAll(previousConnectors);
+
+        System.out.println("Finished creating base documents.");
+        System.out.println("------");
 
         // Add redundant forward connectors
         var reverseConnectorDerivation = reverseMapping(connectorDerivationMapping);
@@ -180,10 +185,31 @@ public class GenerateChain implements Runnable {
             var processed = new HashSet<QualifiedName>();
             cpmDocument.getForwardConnectors().forEach(fc -> {
                 var connectedFc = fc.getId();
+
                 while (reverseConnectorDerivation.containsKey(connectedFc) && !processed.contains(connectedFc)) {
                     if (!processed.contains(reverseConnectorDerivation.get(connectedFc))) {
+                        var id = reverseConnectorDerivation.get(connectedFc);
+                        var metadataOptional = redundantConnectors
+                            .stream()
+                            .filter(c -> c.getConnectorId().equals(id))
+                            .findFirst();
+                        if (metadataOptional.isEmpty()) {
+                            throw new RuntimeException("Could not find redundant connector for " + id);
+                        }
+
+                        var metadata = metadataOptional.get();
                         var redundantFc = new ForwardConnector();
-                        redundantFc.setId(reverseConnectorDerivation.get(connectedFc));
+                        redundantFc.setId(id);
+                        if (updatedBundleIds.containsKey(metadata.getReferenceBundleId())) {
+                            var updatedId =  updatedBundleIds.get(metadata.getReferenceBundleId());
+                            redundantFc.setReferencedBundleId(updatedId);
+                        } else {
+                            redundantFc.setReferencedBundleId(metadata.getReferenceBundleId());
+                        }
+                        redundantFc.setReferencedBundleId(metadata.getReferenceBundleId());
+                        redundantFc.setReferencedMetaBundleId(metadata.getReferenceMetaBundleId());
+                        redundantFc.setReferencedBundleHashValue(metadata.getReferenceBundleHash());
+                        redundantFc.setHashAlg(HashAlgorithms.SHA256);
                         statements.addAll(templateProvMapper.map(redundantFc));
                     }
                     var wasDerivedFrom = pF.newWasDerivedFrom(reverseConnectorDerivation.get(connectedFc), connectedFc);
