@@ -44,6 +44,9 @@ public class RegisterOrganisation implements Runnable {
         intermediateCertificates = values;
     }
 
+    @CommandLine.Option(names = {"-k", "--intermediate-key"}, description = "Signing key of the last intermediate certificate")
+    String lastIntermediateKey;
+
     @CommandLine.Option(names = {"-o", "--organization-id"}, description = "id of the created organization")
     String organizationId;
 
@@ -53,6 +56,9 @@ public class RegisterOrganisation implements Runnable {
         // Need to be checked here, setXXX validation only runs if option is present
         if (clientCertificate == null && basePath == null) {
             throw new CommandLine.ParameterException(spec.commandLine(), "Client certificate must be set if base path is null");
+        }
+        if (clientCertificate == null && lastIntermediateKey == null) {
+            throw new CommandLine.ParameterException(spec.commandLine(), "Last intermediate key must be set if client certificate is null");
         }
 
         try {
@@ -67,8 +73,8 @@ public class RegisterOrganisation implements Runnable {
                 var bundle = Certificates.generateCertificate(
                     "CZ",
                     organizationId,
-                    Certificates.loadPrivateKey(Path.of("src/main/resources/keys/int2.key")),
-                    Certificates.loadCertificate(Path.of("src/main/resources/certificates/int2.pem")),
+                    Certificates.loadPrivateKey(Path.of(lastIntermediateKey)),
+                    Certificates.loadCertificate(Path.of(intermediateCertificates[intermediateCertificates.length - 1])),
                     false,
                     null
                 );
