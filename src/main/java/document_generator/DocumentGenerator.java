@@ -164,33 +164,4 @@ public class DocumentGenerator {
 
         return document;
     }
-
-    public void LinkDocuments(Document document1, Document document2) {
-        ProvFactory pF = new org.openprovenance.prov.vanilla.ProvFactory();
-        ICpmProvFactory cPF = new CpmProvFactory(pF);
-        TemplateProvMapper templateProvMapper = new TemplateProvMapper(cPF);
-
-
-        var bundle1 = (Bundle) document1.getStatementOrBundle().getFirst();
-        var bundle2 = (Bundle) document2.getStatementOrBundle().getFirst();
-
-        QualifiedName fcID = pF.newQualifiedName(CpmNamespaceUrl, "connectorSpec", CpmPrefix);
-        var forwardConnector = new ForwardConnector(fcID);
-        forwardConnector.setReferencedMetaBundleId(bundle2.getId());
-        var mapped = templateProvMapper.map(forwardConnector);
-        bundle1.getStatement().addAll(mapped);
-
-        // TODO: Name - even needed
-//        QualifiedName bcId = pF.newQualifiedName(NamespaceUrl, "connectorFirst", Prefix);
-//        var bc = new BackwardConnector(bcId);
-//        bc.setReferencedMetaBundleId(bundle1.getId());
-//        var mapped2 = templateProvMapper.map(bc);
-//        bundle2.getStatement().addAll(mapped2);
-
-
-        // TODO: Pridat forward connector spec v provenance storage???
-        // TODO: Predgenerovat id v provenance storage
-        // TODO: Pozriet ci neexistuje provenance generator - domain specific cast
-        // MIT License - both storage and cpm java
-    }
 }
