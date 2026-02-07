@@ -12,7 +12,6 @@ import document_generator.Models.ForwardConnectorMetadata;
 import document_generator.ProvenanceStorageClient;
 import org.openprovenance.prov.interop.InteropFramework;
 import org.openprovenance.prov.model.Bundle;
-import org.openprovenance.prov.model.Document;
 import org.openprovenance.prov.model.QualifiedName;
 import org.openprovenance.prov.model.Statement;
 import org.openprovenance.prov.model.interop.Formats;
@@ -36,10 +35,10 @@ public class GenerateChain implements Runnable {
     @Option(names = {"-s", "--storage-base-url"}, required = true, defaultValue = "http://prov-storage-hospital:8000/", description = "base url of prov storage")
     String storageUrlBase;
 
-    @Option(names = {"-o", "--bundle-name"}, required = true, defaultValue = "test-ap", description = "base of the bundle name")
+    @Option(names = {"-o", "--bundle-name"}, required = true, defaultValue = "test", description = "base of the bundle name")
     String bundleNameBase;
 
-    @Option(names = {"-C", "--directory"}, required = true, description = "bundles output directory")
+    @Option(names = {"-d", "--directory"}, required = true, description = "bundles output directory")
     String outputFolder;
 
     @Option(names = {"-n", "--length"}, required = true, description = "length of the provenance chain (highest number of consecutive main activities)")
@@ -50,7 +49,6 @@ public class GenerateChain implements Runnable {
         provenanceChainLength = value;
     }
 
-
     @Option(names = {"-b", "--branching"}, required = true, description = "sum of all (main activities inputs- 1)")
     public void setBranching(int value) {
         if (value < 0) {
@@ -59,7 +57,11 @@ public class GenerateChain implements Runnable {
         branching = value;
     }
 
-    private static final String orgId = "XXXXXXXX";
+    @Option(names = {"-O", "--organization-id",}, required = true)
+    String organizationId;
+
+    @Option(names = {"-C", "--certificate-path",}, required = true)
+    String certificatePath;
 
     @Override
     public void run() {
@@ -83,7 +85,7 @@ public class GenerateChain implements Runnable {
 
         for (int i = 0; i < provenanceChainLength; i++) {
             System.out.println("Starting index: " + i);
-            var documentGenerator = new DocumentGenerator(storageUrlBase, orgId);
+            var documentGenerator = new DocumentGenerator(storageUrlBase, organizationId);
             var doc = documentGenerator.createDocument(
                 bundleNameBase + i,
                 i == 0 ? branching : 1,
@@ -101,7 +103,13 @@ public class GenerateChain implements Runnable {
                 System.out.println("Document: " + doc.getBundleId().getLocalPart() + " saved to " + path);
             }
 
-            var savedDoc = ProvenanceStorageClient.storeDocument(doc.toDocument(), doc.getBundleId().getLocalPart(), orgId, false);
+            var savedDoc = ProvenanceStorageClient.storeDocument(
+                doc.toDocument(),
+                doc.getBundleId().getLocalPart(),
+                organizationId,
+                certificatePath,
+                false
+            );
 
             // Add specialized forward connectors to referenced bundle(s)
             var previousConnectorsIds = previousConnectors.stream().map(ForwardConnectorMetadata::getConnectorId).toList();
@@ -121,7 +129,7 @@ public class GenerateChain implements Runnable {
 
                 var referencedBundle = documentGenerator.addSpecializedForwardConnector(
                     bc,
-                    orgId,
+                    organizationId,
                     referencedBundleId,
                     doc.getBundleId(),
                     pF.newQualifiedName(metaUrl, doc.getBundleId().getLocalPart() + "_meta", metaPrefix),
@@ -136,7 +144,13 @@ public class GenerateChain implements Runnable {
                     System.out.println("Document: " + originalId.getLocalPart() + " saved to " + path);
                 }
 
-                ProvenanceStorageClient.storeDocument(referencedBundle, referencedBundleId.getLocalPart(), orgId, true);
+                ProvenanceStorageClient.storeDocument(
+                    referencedBundle,
+                    referencedBundleId.getLocalPart(),
+                    organizationId,
+                    certificatePath,
+                    true
+                );
                 var bundle = (Bundle) (referencedBundle.getStatementOrBundle().getFirst());
 
                 updatedBundleIds.put(originalId, bundle.getId());
@@ -178,7 +192,7 @@ public class GenerateChain implements Runnable {
         var reverseConnectorDerivation = reverseMapping(connectorDerivationMapping);
         for (var entry : updatedBundleIds.entrySet()) {
             var bundleId = entry.getValue();
-            var document = ProvenanceStorageClient.getDocument(orgId, bundleId.getLocalPart()).getDocument();
+            var document = ProvenanceStorageClient.getDocument(organizationId, bundleId.getLocalPart()).getDocument();
             var cpmDocument = new CpmDocument(document, pF, cPF, new CpmOrderedFactory());
 
             var statements = new ArrayList<Statement>();
@@ -201,7 +215,7 @@ public class GenerateChain implements Runnable {
                         var redundantFc = new ForwardConnector();
                         redundantFc.setId(id);
                         if (updatedBundleIds.containsKey(metadata.getReferenceBundleId())) {
-                            var updatedId =  updatedBundleIds.get(metadata.getReferenceBundleId());
+                            var updatedId = updatedBundleIds.get(metadata.getReferenceBundleId());
                             redundantFc.setReferencedBundleId(updatedId);
                         } else {
                             redundantFc.setReferencedBundleId(metadata.getReferenceBundleId());
@@ -232,7 +246,12 @@ public class GenerateChain implements Runnable {
                 fullBundleId.getPrefix())
             );
 
-            ProvenanceStorageClient.storeDocument(doc, bundleId.getLocalPart(), orgId, true);
+            ProvenanceStorageClient.storeDocument(doc,
+                bundleId.getLocalPart(),
+                organizationId,
+                certificatePath,
+                true
+            );
             InteropFramework interop = new InteropFramework();
             var path = "src/main/resources/output/" + entry.getKey().getLocalPart();
             interop.writeDocument(path + ".json", doc);
@@ -249,25 +268,3 @@ public class GenerateChain implements Runnable {
         return result;
     }
 }
-
-
-// vystup - sample, WSI, hocico really, je spec forward connector
-// ta ista entita, moze mat iny nazov, ale musi mat rovnaky typ/id, je spec back connectoru v dalsom docu,
-
-
-// TODO: One command to populate domain specific part with type entity type and number of entities
-// TODO: Transform to PROV-DM chain - PROV-DM forward connector - nie je z nich nic derivovane, backward connector - nederivuje z nicoho
-// Musi existovat derivation path z vystupu do vstupu
-// Branching m - je minimalne m/2 entit, dlzka cesty z inputu do output
-
-// TODO: Update document
-// Musi to mat rovnake id, ale nazov bundlu musi byt iny
-
-
-//    @Option(names = {"-m", "--graph-size"}, required = true, description = "number of graph nodes in each bundles")
-//    public void setGraphSize(int value) {
-//        if (value < 0) {
-//            throw new ParameterException(spec.commandLine(), "graphSize must be greater or equal to 0");
-//        }
-//        graphSize = value;
-//    }

@@ -10,18 +10,14 @@ import org.openprovenance.prov.model.Document;
 import org.openprovenance.prov.model.interop.Formats;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.security.*;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.text.MessageFormat;
 import java.time.Instant;
 import java.util.Base64;
@@ -29,7 +25,7 @@ import java.util.Base64;
 public class ProvenanceStorageClient {
     private static final String baseUrl = "http://localhost:8001";
 
-    public static ProvenanceStorageResponse storeDocument(Document document, String bundleId, String orgId, boolean update) {
+    public static ProvenanceStorageResponse storeDocument(Document document, String bundleId, String orgId, String certificatePath, boolean update) {
         try {
             var transformer = new Transformer();
             var documentJson = transformer.createProvStorageJson(document);
@@ -41,7 +37,7 @@ public class ProvenanceStorageClient {
             var jsonBody = objectMapper.createObjectNode();
             jsonBody.put("document", base64doc);
             jsonBody.put("documentFormat", "json");
-            jsonBody.put("signature", createSignature(documentJson, "src/main/resources/test_sign.pem"));
+            jsonBody.put("signature", createSignature(documentJson, certificatePath));
             jsonBody.put("createdOn", Instant.now().getEpochSecond() - 60);
 
             try (HttpClient client = HttpClient.newHttpClient()) {
@@ -127,19 +123,8 @@ public class ProvenanceStorageClient {
         }
     }
 
-    private static String createSignature(String json, String path) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, SignatureException {
-        String privateKeyPem = new String(Files.readAllBytes(Paths.get(path)));
-
-        privateKeyPem = privateKeyPem
-            .replace("-----BEGIN PRIVATE KEY-----", "")
-            .replace("-----END PRIVATE KEY-----", "")
-            .replaceAll("\\s", "");
-
-        byte[] keyBytes = Base64.getDecoder().decode(privateKeyPem);
-
-        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
-        KeyFactory keyFactory = KeyFactory.getInstance("EC");
-        PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
+    private static String createSignature(String json, String path) throws Exception {
+        var privateKey = Certificates.loadPrivateKey(Path.of(path));
 
         Signature ecdsaSign = Signature.getInstance("SHA256withECDSA");
         ecdsaSign.initSign(privateKey);

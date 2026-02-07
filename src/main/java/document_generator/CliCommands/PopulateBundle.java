@@ -24,8 +24,11 @@ public class PopulateBundle implements Runnable {
     @Option(names = {"-s", "--storage-base-url"}, defaultValue = "http://prov-storage-hospital:8000/", description = "base url of prov storage")
     String storageUrlBase;
 
-    @Option(names = {"-r", "--org-id"}, defaultValue = "XXXXXXXX", description = "id of the organization")
+    @Option(names = {"-O", "--organization-id"}, defaultValue = "XXXXXXXX", description = "id of the organization")
     String orgId;
+
+    @Option(names = {"-C", "--certificate-path",}, required = true)
+    String certificatePath;
 
     @Option(names = {"-B", "--bundle-id"}, required = true, description = "id of the updated bundle")
     String bundleId;
@@ -134,7 +137,13 @@ public class PopulateBundle implements Runnable {
             fullBundleId.getPrefix())
         );
 
-        ProvenanceStorageClient.storeDocument(doc, bundleId, orgId, true);
+        ProvenanceStorageClient.storeDocument(
+            doc,
+            bundleId,
+            orgId,
+            certificatePath,
+            true
+        );
         InteropFramework interop = new InteropFramework();
         var path = "src/main/resources/output/fixed";
         interop.writeDocument(path + ".provn", doc);

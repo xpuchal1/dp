@@ -7,6 +7,7 @@ import cz.muni.fi.cpm.template.mapper.ITemplateProvMapper;
 import cz.muni.fi.cpm.template.mapper.TemplateProvMapper;
 import cz.muni.fi.cpm.template.schema.TraversalInformation;
 import cz.muni.fi.cpm.vanilla.CpmProvFactory;
+import document_generator.CliCommands.GenerateCertificates;
 import document_generator.CliCommands.GenerateChain;
 import document_generator.CliCommands.PopulateBundle;
 import document_generator.CliCommands.RegisterOrganisation;
@@ -25,6 +26,7 @@ import java.io.InputStream;
         GenerateChain.class,
         PopulateBundle.class,
         RegisterOrganisation.class,
+        GenerateCertificates.class,
     }
 )
 public class Main implements Runnable {

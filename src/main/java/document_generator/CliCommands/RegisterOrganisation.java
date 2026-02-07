@@ -1,9 +1,9 @@
 package document_generator.CliCommands;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import document_generator.Certificates;
 import picocli.CommandLine;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -12,7 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,10 +20,20 @@ public class RegisterOrganisation implements Runnable {
     @CommandLine.Spec
     CommandLine.Model.CommandSpec spec;
 
+    String[] intermediateCertificates;
+
+    @CommandLine.Option(names = {"-p", "--base-path"},
+        description =
+            "Base of the path where created certificate will be exported. \n"
+                + "Must be set if client certificate is omitted.")
+    String basePath;
+
     @CommandLine.Option(names = {"-s", "--storage-base-url"}, required = true, defaultValue = "http://localhost:8001", description = "base url of prov storage")
     String storageUrlBase;
 
-    @CommandLine.Option(names = {"-c", "--client-certificate"}, required = true, description = "base url of prov storage")
+    @CommandLine.Option(names = {"-c", "--client-certificate"},
+        description = "certificate of the client org.\n" +
+            "certificate will be created and signed by last intermediate certificate if not provided")
     String clientCertificate;
 
     @CommandLine.Option(names = {"-i", "--intermediate-certificates"}, required = true, arity = "2..*", description = "base url of prov storage")
@@ -35,28 +44,47 @@ public class RegisterOrganisation implements Runnable {
         intermediateCertificates = values;
     }
 
-    String[] intermediateCertificates;
-
     @CommandLine.Option(names = {"-o", "--organization-id"}, description = "id of the created organization")
     String organizationId;
 
     @Override
     public void run() {
         organizationId = organizationId == null ? UUID.randomUUID().toString().substring(0, 8) : organizationId;
-        String cert;
-        List<String> intermediateCertificatesList = new ArrayList<>();
+        // Need to be checked here, setXXX validation only runs if option is present
+        if (clientCertificate == null && basePath == null) {
+            throw new CommandLine.ParameterException(spec.commandLine(), "Client certificate must be set if base path is null");
+        }
+
         try {
-            cert = Files.readString(Path.of(clientCertificate));
+            List<String> intermediateCertificatesList = new ArrayList<>();
             for (String intermediateCertificate : intermediateCertificates) {
                 var intermediate = Files.readString(Path.of(intermediateCertificate));
                 intermediateCertificatesList.add(intermediate);
             }
 
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+            String cert;
+            if (clientCertificate == null) {
+                var bundle = Certificates.generateCertificate(
+                    "CZ",
+                    organizationId,
+                    Certificates.loadPrivateKey(Path.of("src/main/resources/keys/int2.key")),
+                    Certificates.loadCertificate(Path.of("src/main/resources/certificates/int2.pem")),
+                    false,
+                    null
+                );
 
-        try (HttpClient client = HttpClient.newHttpClient()) {
+                var keyPath = Path.of(basePath + "keys/" + organizationId + ".key");
+                Certificates.exportKey(bundle.key, keyPath);
+                System.out.println("Generated key saved as: " + keyPath);
+                var certPath = Path.of(basePath + "certificates/" + organizationId + ".pem");
+                Certificates.exportCert(bundle.cert, certPath);
+                cert = Certificates.exportCertToString(bundle.cert);
+                System.out.println("Generated certificate saved as: " + certPath);
+            } else {
+                cert = Files.readString(Path.of(clientCertificate));
+            }
+
+            HttpClient client = HttpClient.newHttpClient();
             var url = MessageFormat.format(
                 "{0}/api/v1/organizations/{1}",
                 storageUrlBase,
@@ -76,7 +104,6 @@ public class RegisterOrganisation implements Runnable {
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody.toString()))
                 .build();
-            System.out.println(request.uri());
 
             var response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
@@ -85,7 +112,6 @@ public class RegisterOrganisation implements Runnable {
 
             System.out.println("Registered organisation: " + organizationId);
         } catch (Exception e) {
-            System.err.println(e.getMessage());
             throw new RuntimeException(e);
         }
     }
