@@ -74,12 +74,12 @@ public class RegisterOrganisation implements Runnable {
                 );
 
                 var keyPath = Path.of(basePath + "keys/" + organizationId + ".key");
-                Certificates.exportKey(bundle.key, keyPath);
+                Certificates.exportKey(bundle.getKey(), keyPath);
                 System.out.println("Generated key saved as: " + keyPath);
                 var certPath = Path.of(basePath + "certificates/" + organizationId + ".pem");
-                Certificates.exportCert(bundle.cert, certPath);
-                cert = Certificates.exportCertToString(bundle.cert);
+                Certificates.exportCert(bundle.getCert(), certPath);
                 System.out.println("Generated certificate saved as: " + certPath);
+                cert = Certificates.exportCertToString(bundle.getCert());
             } else {
                 cert = Files.readString(Path.of(clientCertificate));
             }
