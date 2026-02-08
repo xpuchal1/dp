@@ -57,7 +57,7 @@ public class PopulateBundle implements Runnable {
     @Option(names = {"-t", "--type"}, required = true, description = "type")
     String type;
 
-    @Option(names = {"-d", "--directory"}, required = true, description = "bundles output directory")
+    @Option(names = {"-d", "--directory"}, description = "bundles output directory")
     String outputFolder;
 
     @Override
