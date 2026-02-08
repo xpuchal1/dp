@@ -8,10 +8,12 @@ import cz.muni.fi.cpm.template.mapper.TemplateProvMapper;
 import cz.muni.fi.cpm.template.schema.*;
 import cz.muni.fi.cpm.vanilla.CpmProvFactory;
 import document_generator.Models.ForwardConnectorMetadata;
+import org.openprovenance.prov.interop.InteropFramework;
 import org.openprovenance.prov.model.Bundle;
 import org.openprovenance.prov.model.Document;
 import org.openprovenance.prov.model.ProvFactory;
 import org.openprovenance.prov.model.QualifiedName;
+import org.openprovenance.prov.model.interop.Formats;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -163,5 +165,16 @@ public class DocumentGenerator {
         bundle.setId(pF.newQualifiedName(bundleId.getNamespaceURI(), originalLocalPartPrefix + "-v" + System.currentTimeMillis(), bundleId.getPrefix()));
 
         return document;
+    }
+
+    public static void exportDocument(Document document, String path, boolean createSvg) {
+        InteropFramework interop = new InteropFramework();
+        interop.writeDocument(path + ".json", document, Formats.ProvFormat.JSON);
+        if (createSvg) {
+            interop.writeDocument(path + ".svg", document);
+        }
+
+        var bundleId = ((Bundle) document.getStatementOrBundle().getFirst()).getId();
+        System.out.println("Document: " + bundleId.getLocalPart() + " saved to " + path);
     }
 }

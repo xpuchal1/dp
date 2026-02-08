@@ -3,8 +3,8 @@ package document_generator.CliCommands;
 import cz.muni.fi.cpm.divided.ordered.CpmOrderedFactory;
 import cz.muni.fi.cpm.model.CpmDocument;
 import cz.muni.fi.cpm.vanilla.CpmProvFactory;
+import document_generator.DocumentGenerator;
 import document_generator.ProvenanceStorageClient;
-import org.openprovenance.prov.interop.InteropFramework;
 import org.openprovenance.prov.model.*;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -52,11 +52,13 @@ public class PopulateBundle implements Runnable {
         }
         entityCount = value;
     }
-
     int entityCount;
 
     @Option(names = {"-t", "--type"}, required = true, description = "type")
     String type;
+
+    @Option(names = {"-d", "--directory"}, required = true, description = "bundles output directory")
+    String outputFolder;
 
     @Override
     public void run() {
@@ -144,10 +146,11 @@ public class PopulateBundle implements Runnable {
             certificatePath,
             true
         );
-        InteropFramework interop = new InteropFramework();
-        var path = "src/main/resources/output/fixed";
-        interop.writeDocument(path + ".provn", doc);
-        interop.writeDocument(path + ".svg", doc);
+
+        if (outputFolder != null) {
+            var path = outputFolder + "fixed";
+            DocumentGenerator.exportDocument(doc, path, true);
+        }
     }
 
     public QualifiedName CpmQualifiedName(String name, ProvFactory pf) {

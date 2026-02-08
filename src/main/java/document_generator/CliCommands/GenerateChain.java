@@ -10,11 +10,9 @@ import cz.muni.fi.cpm.vanilla.CpmProvFactory;
 import document_generator.DocumentGenerator;
 import document_generator.Models.ForwardConnectorMetadata;
 import document_generator.ProvenanceStorageClient;
-import org.openprovenance.prov.interop.InteropFramework;
 import org.openprovenance.prov.model.Bundle;
 import org.openprovenance.prov.model.QualifiedName;
 import org.openprovenance.prov.model.Statement;
-import org.openprovenance.prov.model.interop.Formats;
 import picocli.CommandLine.*;
 
 import java.util.ArrayList;
@@ -38,7 +36,7 @@ public class GenerateChain implements Runnable {
     @Option(names = {"-o", "--bundle-name"}, required = true, defaultValue = "test", description = "base of the bundle name")
     String bundleNameBase;
 
-    @Option(names = {"-d", "--directory"}, required = true, description = "bundles output directory")
+    @Option(names = {"-d", "--directory"}, description = "bundles output directory")
     String outputFolder;
 
     @Option(names = {"-n", "--length"}, required = true, description = "length of the provenance chain (highest number of consecutive main activities)")
@@ -96,11 +94,8 @@ public class GenerateChain implements Runnable {
             redundantConnectors.addAll(previousConnectors);
 
             if (outputFolder != null) {
-                InteropFramework interop = new InteropFramework();
                 var path = outputFolder + doc.getBundleId().getLocalPart();
-                interop.writeDocument(path + ".json", doc.toDocument(), Formats.ProvFormat.JSON);
-                interop.writeDocument(path + ".svg", doc.toDocument());
-                System.out.println("Document: " + doc.getBundleId().getLocalPart() + " saved to " + path);
+                DocumentGenerator.exportDocument(doc.toDocument(), path, true);
             }
 
             var savedDoc = ProvenanceStorageClient.storeDocument(
@@ -137,11 +132,8 @@ public class GenerateChain implements Runnable {
                 );
 
                 if (outputFolder != null) {
-                    InteropFramework interop = new InteropFramework();
                     var path = outputFolder + originalId.getLocalPart();
-                    interop.writeDocument(path + ".json", referencedBundle, Formats.ProvFormat.JSON);
-                    interop.writeDocument(path + ".svg", referencedBundle);
-                    System.out.println("Document: " + originalId.getLocalPart() + " saved to " + path);
+                    DocumentGenerator.exportDocument(referencedBundle, path, true);
                 }
 
                 ProvenanceStorageClient.storeDocument(
@@ -252,10 +244,11 @@ public class GenerateChain implements Runnable {
                 certificatePath,
                 true
             );
-            InteropFramework interop = new InteropFramework();
-            var path = "src/main/resources/output/" + entry.getKey().getLocalPart();
-            interop.writeDocument(path + ".json", doc);
-            interop.writeDocument(path + ".svg", doc);
+
+            if (outputFolder != null) {
+                var path = outputFolder + entry.getKey().getLocalPart();
+                DocumentGenerator.exportDocument(doc, path, true);
+            }
         }
     }
 
