@@ -1,0 +1,6 @@
+{
+  "id": "Hospital_Provenance_Storage",
+  "fqdn": "prov-storage-hospital:8000",
+  "trustedPartyFqdn": "trusted-party:8020",
+  "disableTrustedParty": false
+}

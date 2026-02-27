@@ -1,0 +1,24 @@
+ARG PYTHON_BASE=3.11-bullseye
+
+FROM python:$PYTHON_BASE AS builder
+
+# install PDM
+RUN pip install -U pdm
+ENV PDM_CHECK_UPDATE=false
+WORKDIR /dbprov
+COPY pyproject.toml pdm.lock README.md /dbprov/
+RUN pdm --no-cache install --check --prod -G prov-storage --no-editable --no-self
+
+FROM python:$PYTHON_BASE
+COPY --from=builder /dbprov/.venv/ /dbprov/.venv
+
+# Python packages; django config
+ENV PATH="/dbprov/.venv/bin:$PATH"
+ENV APP_CONFIG_PATH=/dbprov/config/config.json
+ENV NEO4J_BOLT_URL=bolt://neo4j:password@neo4j:7687
+ENV PYTHONUNBUFFERED=1
+
+# Finalize
+COPY dbprov_prov_storage/ /dbprov
+WORKDIR /dbprov
+ENTRYPOINT ["sh", "/dbprov/docker-entrypoint.sh"]

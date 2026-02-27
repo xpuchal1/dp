@@ -1,0 +1,6 @@
+{
+  "id": "Research_Centre_Provenance_Storage",
+  "fqdn": "prov-storage-research:8000",
+  "trustedPartyFqdn": "trusted-party:8020",
+  "disableTrustedParty": false
+}

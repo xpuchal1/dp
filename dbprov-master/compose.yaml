@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: dbprov
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      timeout: 5s
+      retries: 10
+    ports:
+      - 5432:5432
+
+  neo4j-hospital:
+    image: neo4j:bullseye
+    environment:
+      NEO4J_dbms_usage__report_enabled: false
+      NEO4J_AUTH: neo4j/password
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider 0.0.0.0:7474 || exit 1"]
+      timeout: 5s
+      retries: 10
+    ports:
+      - 7474:7474
+      - 7687:7687
+
+  trusted-party:
+    image: dbprov-trusted-party
+    ports:
+      - 8020:8020
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+    healthcheck:
+      timeout: 5s
+      retries: 10
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:8020/health/ || exit 1"]
+
+  prov-storage-hospital:
+    image: dbprov-prov-storage
+    environment:
+      NEO4J_BOLT_URL: bolt://neo4j:password@neo4j-hospital:7687
+    configs:
+      - source: hospital-ps-config
+        target: /dbprov/config/config.json
+        mode: 0600
+    ports:
+      - 8001:8000
+    depends_on:
+      trusted-party:
+        condition: service_healthy
+    healthcheck:
+      timeout: 5s
+      retries: 10
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:8000/health/ || exit 1"]
+
+
+configs:
+  hospital-ps-config:
+    file: ./dbprov_prov_storage/config/config-hospital.json

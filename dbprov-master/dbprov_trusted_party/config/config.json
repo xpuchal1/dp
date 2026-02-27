@@ -1,0 +1,7 @@
+{
+  "id": "Trusted_Party",
+  "fqdn": "trusted-party:8020",
+  "trustedCertsDirPath": "/dbprov/config/certificates/trusted_certs",
+  "publicCertPath": "/dbprov/config/certificates/tp.pem",
+  "privateKeyPath": "/dbprov/config/certificates/tp.key"
+}

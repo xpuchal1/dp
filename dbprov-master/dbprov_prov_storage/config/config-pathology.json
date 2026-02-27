@@ -1,0 +1,6 @@
+{
+  "id": "Pathology_Provenance_Storage",
+  "fqdn": "prov-storage-pathology:8000",
+  "trustedPartyFqdn": "trusted-party:8020",
+  "disableTrustedParty": false
+}
