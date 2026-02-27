@@ -26,6 +26,18 @@ All commands interact with a provenance storage service and support cryptographi
 
 ---
 
+## Requirements 
+
+### Dependencies
+- Docker
+- cpm-core and cpm-template manually added to resources: https://github.com/dwwop/cpm/releases
+
+### Setup
+- Run the following commands from the `dbprov-master/` directory
+- `docker build -f Dockerfile.ProvStorage -t dbprov-prov-storage .`
+- `docker build -f Dockerfile.TrustedParty -t dbprov-trusted-party .`
+- `docker compose up -d`
+
 ## Commands
 
 ### register-org
