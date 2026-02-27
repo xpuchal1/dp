@@ -67,6 +67,7 @@ public class PopulateBundle implements Runnable {
         var cpmFactory = new CpmOrderedFactory();
 
         var document = ProvenanceStorageClient.getDocument(orgId, bundleId);
+        DocumentGenerator.exportDocument(document.getDocument(), "src/main/resources/output/xd", false);
         var cpmDocument = new CpmDocument(document.getDocument(), pF, cPF, cpmFactory);
 
         var connectorOptional = cpmDocument.getForwardConnectors()

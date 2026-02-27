@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import document_generator.Models.HashedDocument;
 import document_generator.Models.ProvenanceStorageResponse;
 import org.openprovenance.prov.interop.InteropFramework;
+import org.openprovenance.prov.model.Bundle;
 import org.openprovenance.prov.model.Document;
 import org.openprovenance.prov.model.interop.Formats;
 
@@ -90,18 +91,29 @@ public class ProvenanceStorageClient {
                 .build();
 
             var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new RuntimeException(response.body());
+            }
+
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(response.body());
             var base64Doc = root.path("document").asText();
             var hash = root.path("token").path("data").path("documentDigest").asText();
             JsonNode documentJsonNode = mapper.readTree(Base64.getDecoder().decode(base64Doc));
-            AddIdAndPrefixToBundle(documentJsonNode);
+            AddIdToBundle(documentJsonNode);
 
             var docJson = documentJsonNode.toString().replace("https://openprovenance.org/blank#", "https://openprovenance.org/blank");
             InputStream stream = new ByteArrayInputStream(docJson.getBytes(StandardCharsets.UTF_8));
             InteropFramework interop = new InteropFramework();
 
             var document = interop.readDocument(stream, Formats.ProvFormat.JSON);
+            var bundle = (Bundle) document.getStatementOrBundle().getFirst();
+            var ns = document.getNamespace();
+            var namespaceUri = ns.lookupPrefix(bundle.getId().getPrefix());
+            var pF = new org.openprovenance.prov.vanilla.ProvFactory();
+            var updatedBundleId = pF.newQualifiedName(namespaceUri, bundle.getId().getLocalPart(), bundle.getId().getPrefix());
+            bundle.setId(updatedBundleId);
+
             return new HashedDocument(document, hash);
         } catch (Exception e) {
             System.err.println(e.getMessage());
@@ -110,7 +122,7 @@ public class ProvenanceStorageClient {
 
     }
 
-    private static void AddIdAndPrefixToBundle(JsonNode document) {
+    private static void AddIdToBundle(JsonNode document) {
         var bundle = document.get("bundle");
         var fields = bundle.fields();
         if (fields.hasNext()) {
@@ -119,7 +131,6 @@ public class ProvenanceStorageClient {
             var key = bundleItem.getKey();
             var innerObj = (ObjectNode) bundle.get(key);
             innerObj.put("@id", key);
-            innerObj.put("prefix", document.get("prefix"));
         }
     }
 
