@@ -31,12 +31,17 @@ All commands interact with a provenance storage service and support cryptographi
 ### Dependencies
 - Docker
 - cpm-core and cpm-template manually added to resources: https://github.com/dwwop/cpm/releases
+- 
 
-### Setup
+### Running the app
 - Run the following commands from the `dbprov-master/` directory
 - `docker build -f Dockerfile.ProvStorage -t dbprov-prov-storage .`
 - `docker build -f Dockerfile.TrustedParty -t dbprov-trusted-party .`
 - `docker compose up -d`
+- Build the java CLI in the root directory
+- `mvn package`
+- Run the desired command with necessary options
+- `java -jar .\target\provenance-testing-1.0-SNAPSHOT.jar <command> <options>`
 
 ## Commands
 
