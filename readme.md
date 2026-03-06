@@ -29,6 +29,7 @@ All commands interact with a provenance storage service and support cryptographi
 ## Requirements 
 
 ### Dependencies
+- Java 23
 - Docker
 - cpm-core and cpm-template manually added to resources: https://github.com/dwwop/cpm/releases
 - graphviz is required to generate svg graph if documents are to be stored locally
