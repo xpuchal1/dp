@@ -31,7 +31,7 @@ All commands interact with a provenance storage service and support cryptographi
 ### Dependencies
 - Docker
 - cpm-core and cpm-template manually added to resources: https://github.com/dwwop/cpm/releases
-- 
+- graphviz is required to generate svg graph if documents are to be stored locally
 
 ### Running the app
 - Run the following commands from the `dbprov-master/` directory
