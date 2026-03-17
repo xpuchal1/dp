@@ -1,0 +1,7 @@
+{
+  "id": "TrustedParty",
+  "fqdn": "127.0.0.1:8020",
+  "trustedCertsDirPath": "/home/reyvateil/rationai/david-gajdos-prov-server/simulation/certificates/test/",
+  "publicCertPath": "/home/reyvateil/rationai/david-gajdos-prov-server/simulation/certificates/trusted_parties_certificates/czech_tp/cz_tp.pem",
+  "privateKeyPath": "/home/reyvateil/rationai/david-gajdos-prov-server/simulation/certificates/trusted_parties_certificates/czech_tp/cz_tp.key"
+}
