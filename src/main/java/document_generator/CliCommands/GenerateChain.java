@@ -30,7 +30,7 @@ public class GenerateChain implements Runnable {
     int branching;
 
     // Prefix of bundle id
-    @Option(names = {"-s", "--storage-base-url"}, required = true, defaultValue = "http://prov-storage-hospital:8000/", description = "base url of prov storage")
+    @Option(names = {"-s", "--storage-base-url"}, required = true, defaultValue = "http://localhost:8001", description = "base url of prov storage")
     String storageUrlBase;
 
     @Option(names = {"-o", "--bundle-name"}, required = true, defaultValue = "test", description = "base of the bundle name")
@@ -61,12 +61,14 @@ public class GenerateChain implements Runnable {
     @Option(names = {"-C", "--certificate-path",}, required = true)
     String certificatePath;
 
+    String storageUrlBaseInternal = "http://prov-storage-hospital:8000/";
+
     @Override
     public void run() {
         var firstBundleOutputs = branching - provenanceChainLength + 2;
 
         var metaPrefix = "meta";
-        var metaUrl = storageUrlBase + "api/v1/documents/meta/";
+        var metaUrl = storageUrlBaseInternal + "api/v1/documents/meta/";
 
         var pF = new org.openprovenance.prov.vanilla.ProvFactory();
         var cPF = new CpmProvFactory(pF);
@@ -83,7 +85,7 @@ public class GenerateChain implements Runnable {
 
         for (int i = 0; i < provenanceChainLength; i++) {
             System.out.println("Starting index: " + i);
-            var documentGenerator = new DocumentGenerator(storageUrlBase, organizationId);
+            var documentGenerator = new DocumentGenerator(storageUrlBaseInternal, organizationId);
             var doc = documentGenerator.createDocument(
                 bundleNameBase + i,
                 i == 0 ? branching : 1,
@@ -99,6 +101,7 @@ public class GenerateChain implements Runnable {
             }
 
             var savedDoc = ProvenanceStorageClient.storeDocument(
+                storageUrlBase,
                 doc.toDocument(),
                 doc.getBundleId().getLocalPart(),
                 organizationId,
@@ -123,6 +126,7 @@ public class GenerateChain implements Runnable {
                 }
 
                 var referencedBundle = documentGenerator.addSpecializedForwardConnector(
+                    storageUrlBase,
                     bc,
                     organizationId,
                     referencedBundleId,
@@ -137,6 +141,7 @@ public class GenerateChain implements Runnable {
                 }
 
                 ProvenanceStorageClient.storeDocument(
+                    storageUrlBase,
                     referencedBundle,
                     referencedBundleId.getLocalPart(),
                     organizationId,
@@ -184,7 +189,11 @@ public class GenerateChain implements Runnable {
         var reverseConnectorDerivation = reverseMapping(connectorDerivationMapping);
         for (var entry : updatedBundleIds.entrySet()) {
             var bundleId = entry.getValue();
-            var document = ProvenanceStorageClient.getDocument(organizationId, bundleId.getLocalPart()).getDocument();
+            var document = ProvenanceStorageClient.getDocument(
+                storageUrlBase,
+                organizationId,
+                bundleId.getLocalPart()
+            ).getDocument();
             var cpmDocument = new CpmDocument(document, pF, cPF, new CpmOrderedFactory());
 
             var statements = new ArrayList<Statement>();
@@ -238,7 +247,9 @@ public class GenerateChain implements Runnable {
                 fullBundleId.getPrefix())
             );
 
-            ProvenanceStorageClient.storeDocument(doc,
+            ProvenanceStorageClient.storeDocument(
+                storageUrlBase,
+                doc,
                 bundleId.getLocalPart(),
                 organizationId,
                 certificatePath,

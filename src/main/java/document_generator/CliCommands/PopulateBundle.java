@@ -21,10 +21,10 @@ public class PopulateBundle implements Runnable {
     Model.CommandSpec spec;
 
     // Prefix of bundle id
-    @Option(names = {"-s", "--storage-base-url"}, defaultValue = "http://prov-storage-hospital:8000/", description = "base url of prov storage")
+    @Option(names = {"-s", "--storage-base-url"}, defaultValue = "http://localhost:8001/", description = "base url of prov storage")
     String storageUrlBase;
 
-    @Option(names = {"-O", "--organization-id"}, defaultValue = "XXXXXXXX", description = "id of the organization")
+    @Option(names = {"-O", "--organization-id"}, description = "id of the organization")
     String orgId;
 
     @Option(names = {"-C", "--certificate-path",}, required = true)
@@ -66,8 +66,7 @@ public class PopulateBundle implements Runnable {
         var cPF = new CpmProvFactory(pF);
         var cpmFactory = new CpmOrderedFactory();
 
-        var document = ProvenanceStorageClient.getDocument(orgId, bundleId);
-        DocumentGenerator.exportDocument(document.getDocument(), "src/main/resources/output/xd", false);
+        var document = ProvenanceStorageClient.getDocument(storageUrlBase, orgId, bundleId);
         var cpmDocument = new CpmDocument(document.getDocument(), pF, cPF, cpmFactory);
 
         var connectorOptional = cpmDocument.getForwardConnectors()
@@ -141,6 +140,7 @@ public class PopulateBundle implements Runnable {
         );
 
         ProvenanceStorageClient.storeDocument(
+            storageUrlBase,
             doc,
             bundleId,
             orgId,
@@ -149,7 +149,7 @@ public class PopulateBundle implements Runnable {
         );
 
         if (outputFolder != null) {
-            var path = outputFolder + "fixed";
+            var path = outputFolder + bundleId;
             DocumentGenerator.exportDocument(doc, path, true);
         }
     }

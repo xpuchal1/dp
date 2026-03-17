@@ -24,9 +24,7 @@ import java.time.Instant;
 import java.util.Base64;
 
 public class ProvenanceStorageClient {
-    private static final String baseUrl = "http://localhost:8001";
-
-    public static ProvenanceStorageResponse storeDocument(Document document, String bundleId, String orgId, String certificatePath, boolean update) {
+    public static ProvenanceStorageResponse storeDocument(String baseUrl, Document document, String bundleId, String orgId, String certificatePath, boolean update) {
         try {
             var transformer = new Transformer();
             var documentJson = transformer.createProvStorageJson(document);
@@ -76,7 +74,7 @@ public class ProvenanceStorageClient {
         }
     }
 
-    public static HashedDocument getDocument(String orgId, String bundleId) {
+    public static HashedDocument getDocument(String baseUrl, String orgId, String bundleId) {
         try (HttpClient client = HttpClient.newHttpClient()) {
             var url = MessageFormat.format(
                 "{0}/api/v1/organizations/{1}/documents/{2}",
