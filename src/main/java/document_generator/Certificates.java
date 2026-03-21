@@ -33,6 +33,7 @@ import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Base64;
 import java.util.Date;
 
 public class Certificates {
@@ -286,5 +287,16 @@ public class Certificates {
             .getCertificate(certHolder);
 
         return new CertificateBundle(keyPair.getPrivate(), cert);
+    }
+
+    public static String createSignature(String json, String path) throws Exception {
+        var privateKey = Certificates.loadPrivateKey(Path.of(path));
+
+        Signature ecdsaSign = Signature.getInstance("SHA256withECDSA");
+        ecdsaSign.initSign(privateKey);
+        ecdsaSign.update(json.getBytes(StandardCharsets.UTF_8));
+        byte[] signatureBytes = ecdsaSign.sign();
+
+        return Base64.getEncoder().encodeToString(signatureBytes);
     }
 }

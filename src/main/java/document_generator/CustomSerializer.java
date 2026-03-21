@@ -15,19 +15,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
-public class Transformer {
+public class CustomSerializer {
 
     public final ProvFactory pF;
-    public final CpmProvFactory cPF;
-    public final CpmOrderedFactory cF;
-    public final ProvUtilities u;
     private final InteropFramework interop;
 
-    public Transformer() {
+    public CustomSerializer() {
         this.pF = new org.openprovenance.prov.vanilla.ProvFactory();
-        this.cPF = new CpmProvFactory(pF);
-        this.cF = new CpmOrderedFactory(pF);
-        this.u = new ProvUtilities();
         this.interop = new InteropFramework();
     }
 
@@ -59,6 +53,18 @@ public class Transformer {
                     }
                 }
             }
+        }
+    }
+
+    public static void AddIdToBundle(JsonNode document) {
+        var bundle = document.get("bundle");
+        var fields = bundle.fields();
+        if (fields.hasNext()) {
+            var bundleItem = fields.next();
+
+            var key = bundleItem.getKey();
+            var innerObj = (ObjectNode) bundle.get(key);
+            innerObj.put("@id", key);
         }
     }
 }

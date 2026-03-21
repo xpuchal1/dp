@@ -42,7 +42,7 @@ public class DocumentGenerator {
 
     public CpmDocument createDocument(
         String bundleName,
-        int outputCount,
+        int fcCount,
         List<ForwardConnectorMetadata> bcs,
         List<ForwardConnectorMetadata> rbcs,
         Map<QualifiedName, List<QualifiedName>> mappings
@@ -51,14 +51,14 @@ public class DocumentGenerator {
         ti.setPrefixes(Map.of(CpmPrefix, CpmNamespaceUrl, StoragePrefix, StorageUrl, MetaPrefix, MetaUrl));
         ti.setBundleName(pF.newQualifiedName(StorageUrl, bundleName, StoragePrefix));
 
-        if (outputCount <= 0) {
+        if (fcCount <= 0) {
             throw new IllegalArgumentException("outputCount must be greater than 0");
         }
 
         // Generate forward connectors
         var forwardConnectors = new ArrayList<ForwardConnector>();
-        for (int i = 0; i < outputCount; i++) {
-            var localPart = outputCount != 1 ? bundleName + "-connector-" + i : bundleName + "-connector";
+        for (int i = 0; i < fcCount; i++) {
+            var localPart = fcCount != 1 ? bundleName + "-connector-" + i : bundleName + "-connector";
             QualifiedName fcID = pF.newQualifiedName(CpmNamespaceUrl, localPart, CpmPrefix);
             var forwardConnector = new ForwardConnector(fcID);
             forwardConnectors.add(forwardConnector);

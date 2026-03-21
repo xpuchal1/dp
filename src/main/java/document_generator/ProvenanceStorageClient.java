@@ -17,17 +17,15 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.security.*;
 import java.text.MessageFormat;
 import java.time.Instant;
 import java.util.Base64;
 
 public class ProvenanceStorageClient {
-    public static ProvenanceStorageResponse storeDocument(String baseUrl, Document document, String bundleId, String orgId, String certificatePath, boolean update) {
+    public static ProvenanceStorageResponse storeDocument(String baseUrl, Document document, String bundleId, String orgId, String keyPath, boolean update) {
         try {
-            var transformer = new Transformer();
-            var documentJson = transformer.createProvStorageJson(document);
+            var serializer = new CustomSerializer();
+            var documentJson = serializer.createProvStorageJson(document);
 
             ObjectMapper objectMapper = new ObjectMapper();
 
@@ -36,7 +34,7 @@ public class ProvenanceStorageClient {
             var jsonBody = objectMapper.createObjectNode();
             jsonBody.put("document", base64doc);
             jsonBody.put("documentFormat", "json");
-            jsonBody.put("signature", createSignature(documentJson, certificatePath));
+            jsonBody.put("signature", Certificates.createSignature(documentJson, keyPath));
             jsonBody.put("createdOn", Instant.now().getEpochSecond() - 60);
 
             try (HttpClient client = HttpClient.newHttpClient()) {
@@ -98,7 +96,7 @@ public class ProvenanceStorageClient {
             var base64Doc = root.path("document").asText();
             var hash = root.path("token").path("data").path("documentDigest").asText();
             JsonNode documentJsonNode = mapper.readTree(Base64.getDecoder().decode(base64Doc));
-            AddIdToBundle(documentJsonNode);
+            CustomSerializer.AddIdToBundle(documentJsonNode);
 
             var docJson = documentJsonNode.toString().replace("https://openprovenance.org/blank#", "https://openprovenance.org/blank");
             InputStream stream = new ByteArrayInputStream(docJson.getBytes(StandardCharsets.UTF_8));
@@ -117,29 +115,5 @@ public class ProvenanceStorageClient {
             System.err.println(e.getMessage());
             throw new RuntimeException(e);
         }
-
-    }
-
-    private static void AddIdToBundle(JsonNode document) {
-        var bundle = document.get("bundle");
-        var fields = bundle.fields();
-        if (fields.hasNext()) {
-            var bundleItem = fields.next();
-
-            var key = bundleItem.getKey();
-            var innerObj = (ObjectNode) bundle.get(key);
-            innerObj.put("@id", key);
-        }
-    }
-
-    private static String createSignature(String json, String path) throws Exception {
-        var privateKey = Certificates.loadPrivateKey(Path.of(path));
-
-        Signature ecdsaSign = Signature.getInstance("SHA256withECDSA");
-        ecdsaSign.initSign(privateKey);
-        ecdsaSign.update(json.getBytes(StandardCharsets.UTF_8));
-        byte[] signatureBytes = ecdsaSign.sign();
-
-        return Base64.getEncoder().encodeToString(signatureBytes);
     }
 }
