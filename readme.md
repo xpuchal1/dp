@@ -31,17 +31,16 @@ All commands interact with a provenance storage service and support cryptographi
 ### Dependencies
 - Java 23
 - Docker
-- cpm-core and cpm-template manually added to resources: https://github.com/dwwop/cpm/releases
-- graphviz is required to generate svg graph if documents are to be stored locally
+- graphviz is required to generate svg graph if svg representation of the documents are to be stored locally
 
 ### Running the app
-- Run the following commands from the `dbprov-master/` directory
+Run the following commands from the `dbprov-master/` directory
 - `docker build -f Dockerfile.ProvStorage -t dbprov-prov-storage .`
 - `docker build -f Dockerfile.TrustedParty -t dbprov-trusted-party .`
 - `docker compose up -d`
-- Build the java CLI in the root directory
+Build the java CLI in the root directory
 - `mvn package`
-- Run the desired command with necessary options
+Run the desired command with necessary options
 - `java -jar .\target\provenance-testing-1.0-SNAPSHOT.jar <command> <options>`
 
 ## Commands
@@ -85,7 +84,7 @@ register-org -s <storage-url> -i <cert1> <cert2> [options]
   Path to the signing key of the last intermediate certificate  
   **Required if `-c` is not provided** (used to sign the generated client certificate)
 
-- `-p, --base-path <path>`  
+- `-d, --directory <path>`  
   Base directory path for exporting generated certificates and keys  
   **Required if `-c` is not provided**  
   Generated files will be saved as:
@@ -95,7 +94,7 @@ register-org -s <storage-url> -i <cert1> <cert2> [options]
 #### Validation Rules
 
 When generating a new client certificate (i.e., when `-c` is **not** provided):
-- `-p, --base-path` must be specified
+- `-d, --directory` must be specified
 - `-k, --intermediate-key` must be specified
 - The last certificate from `-i` and the key from `-k` will be used to sign the new certificate
 
@@ -106,7 +105,7 @@ When generating a new client certificate (i.e., when `-c` is **not** provided):
 ```bash
 register-org \
   -s http://localhost:8001 \
-  -p ./output/ \
+  -d ./output/ \
   -i ./certs/int1.pem ./certs/int2.pem \
   -k ./keys/int2.key \
   -o myorg123
@@ -126,7 +125,7 @@ register-org \
 ```bash
 register-org \
   -s http://localhost:8001 \
-  -p ./output/ \
+  -d ./output/ \
   -i ./certs/int1.pem ./certs/int2.pem \
   -k ./keys/int2.key
 ```
@@ -168,6 +167,9 @@ generate-chain -s <storage-url> -o <bundle-name> -d <output-dir> -n <length> -b 
 - `-d, --directory <path>`  
   Output directory for saving bundle files locally (JSON and SVG formats)
 
+- `-g, --create-graph`
+  Create a svg file with graph representation of the document. Ignored if directory is not passed. Requires graphviz. 
+
 - `-n, --length <number>`  
   Length of the provenance chain (number of consecutive main activities)  
   Must be greater than 0
@@ -179,7 +181,7 @@ generate-chain -s <storage-url> -o <bundle-name> -d <output-dir> -n <length> -b 
 - `-O, --organization-id <id>`  
   ID of the organization creating the provenance chain
 
-- `-C, --certificate-path <path>`  
+- `-k, --key-path <path>`  
   Path to the certificate file used for signing documents
 
 #### Validation Rules
@@ -200,7 +202,7 @@ generate-chain \
   -n 5 \
   -b 4 \
   -O hospital-org-001 \
-  -C ./certs/hospital.pem
+  -k ./certs/hospital.key
 ```
 
 **Generate a complex branching chain:**
@@ -213,7 +215,7 @@ generate-chain \
   -n 10 \
   -b 15 \
   -O research-lab-42 \
-  -C ./certs/lab-cert.pem
+  -k ./certs/lab-cert.key
 ```
 
 #### How It Works
@@ -277,7 +279,7 @@ populate-bundle -B <bundle-id> -c <connector-id> -e <entity-count> -t <type> -C 
   Type of the main entity (e.g., "Patient", "Procedure", "Measurement")  
   This type will be assigned to the entity at the forward distance position
 
-- `-C, --certificate-path <path>`  
+- `-k, --key-path <path>`  
   Path to the certificate file used for signing the updated document
 
 #### Optional Options
@@ -297,6 +299,12 @@ populate-bundle -B <bundle-id> -c <connector-id> -e <entity-count> -t <type> -C 
 - `-b, --backward-distance <number>`  
   Distance (number of entities) from the typed entity to the backward connector  
   Default: `0` (randomly determined if not specified)
+
+- `-d, --directory <path>`  
+  Output directory for saving bundle files locally (JSON and SVG formats)
+
+- `-g, --create-graph`
+  Create a svg file with graph representation of the document. Ignored if directory is not passed. Requires graphviz.
 
 #### Validation Rules
 
