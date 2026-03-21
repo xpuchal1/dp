@@ -37,9 +37,21 @@ public class PopulateBundle implements Runnable {
     String connectorId;
 
     @Option(names = {"-f", "--forward-distance"}, defaultValue = "0", description = "distance from the forward connector")
+    public void setForwardDistance(int value) {
+        if (value < 0) {
+            throw new CommandLine.ParameterException(spec.commandLine(), "forward distance must be positive");
+        }
+        forwardDistance = value;
+    }
     int forwardDistance;
 
     @Option(names = {"-b", "--backward-distance"}, defaultValue = "0", description = "distance from the backward connector")
+    public void setBackwardDistance(int value) {
+        if (value < 0) {
+            throw new CommandLine.ParameterException(spec.commandLine(), "backward distance must be positive");
+        }
+        backwardDistance = value;
+    }
     int backwardDistance;
 
     @Option(names = {"-e", "--entity-count"}, required = true, description = "number of new entities")
