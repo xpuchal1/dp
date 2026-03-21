@@ -20,21 +20,10 @@ public class RegisterOrganisation implements Runnable {
     @CommandLine.Spec
     CommandLine.Model.CommandSpec spec;
 
-    String[] intermediateCertificates;
-
-    @CommandLine.Option(names = {"-p", "--base-path"},
-        description =
-            "Base of the path where created certificate will be exported. \n"
-                + "Must be set if client certificate is omitted.")
-    String basePath;
-
     @CommandLine.Option(names = {"-s", "--storage-base-url"}, required = true, defaultValue = "http://localhost:8001", description = "base url of prov storage")
     String storageUrlBase;
 
-    @CommandLine.Option(names = {"-c", "--client-certificate"},
-        description = "certificate of the client org.\n" +
-            "certificate will be created and signed by last intermediate certificate if not provided")
-    String clientCertificate;
+    String[] intermediateCertificates;
 
     @CommandLine.Option(names = {"-i", "--intermediate-certificates"}, required = true, arity = "2..*", description = "base url of prov storage")
     public void setIntermediateCertificates(String[] values) {
@@ -44,17 +33,26 @@ public class RegisterOrganisation implements Runnable {
         intermediateCertificates = values;
     }
 
+    @CommandLine.Option(names = {"-c", "--client-certificate"},
+        description = "certificate of the client org.\n" +
+            "certificate will be created and signed by last intermediate certificate if not provided")
+    String clientCertificate;
+
     @CommandLine.Option(names = {"-k", "--intermediate-key"}, description = "Signing key of the last intermediate certificate")
     String lastIntermediateKey;
 
-    @CommandLine.Option(names = {"-o", "--organization-id"}, description = "id of the created organization")
+    @CommandLine.Option(names = {"-d", "--directory"},
+        description = "Base directory where created certificate will be exported.\n Must be set if client certificate is omitted.")
+    String outputFolder;
+
+    @CommandLine.Option(names = {"-O", "--organization-id"}, description = "id of the created organization")
     String organizationId;
 
     @Override
     public void run() {
         organizationId = organizationId == null ? UUID.randomUUID().toString().substring(0, 8) : organizationId;
         // Need to be checked here, setXXX validation only runs if option is present
-        if (clientCertificate == null && basePath == null) {
+        if (clientCertificate == null && outputFolder == null) {
             throw new CommandLine.ParameterException(spec.commandLine(), "Client certificate must be set if base path is null");
         }
         if (clientCertificate == null && lastIntermediateKey == null) {
@@ -79,10 +77,10 @@ public class RegisterOrganisation implements Runnable {
                     null
                 );
 
-                var keyPath = Path.of(basePath + "keys/" + organizationId + ".key");
+                var keyPath = Path.of(outputFolder + "keys/" + organizationId + ".key");
                 Certificates.exportKey(bundle.getKey(), keyPath);
                 System.out.println("Generated key saved as: " + keyPath);
-                var certPath = Path.of(basePath + "certificates/" + organizationId + ".pem");
+                var certPath = Path.of(outputFolder + "certificates/" + organizationId + ".pem");
                 Certificates.exportCert(bundle.getCert(), certPath);
                 System.out.println("Generated certificate saved as: " + certPath);
                 cert = Certificates.exportCertToString(bundle.getCert());

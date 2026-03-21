@@ -27,8 +27,8 @@ public class PopulateBundle implements Runnable {
     @Option(names = {"-O", "--organization-id"}, description = "id of the organization")
     String orgId;
 
-    @Option(names = {"-C", "--certificate-path",}, required = true)
-    String certificatePath;
+    @Option(names = {"-k", "--key-path",}, required = true)
+    String keyPath;
 
     @Option(names = {"-B", "--bundle-id"}, required = true, description = "id of the updated bundle")
     String bundleId;
@@ -59,6 +59,9 @@ public class PopulateBundle implements Runnable {
 
     @Option(names = {"-d", "--directory"}, description = "bundles output directory")
     String outputFolder;
+
+    @Option(names = {"-g", "--create-graph"}, description = "Creates a graph representation of the bundle. Will be ignored is directory is not set. Requires graphviz to work.")
+    Boolean createGraph;
 
     @Override
     public void run() {
@@ -144,13 +147,13 @@ public class PopulateBundle implements Runnable {
             doc,
             bundleId,
             orgId,
-            certificatePath,
+            keyPath,
             true
         );
 
         if (outputFolder != null) {
             var path = outputFolder + bundleId;
-            DocumentGenerator.exportDocument(doc, path, true);
+            DocumentGenerator.exportDocument(doc, path, createGraph);
         }
     }
 

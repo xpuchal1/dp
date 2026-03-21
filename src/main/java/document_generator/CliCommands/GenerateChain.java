@@ -33,13 +33,10 @@ public class GenerateChain implements Runnable {
     @Option(names = {"-s", "--storage-base-url"}, required = true, defaultValue = "http://localhost:8001", description = "base url of prov storage")
     String storageUrlBase;
 
-    @Option(names = {"-o", "--bundle-name"}, required = true, defaultValue = "test", description = "base of the bundle name")
+    @Option(names = {"-o", "--bundle-name"}, required = true, description = "Bundle name prefix")
     String bundleNameBase;
 
-    @Option(names = {"-d", "--directory"}, description = "bundles output directory")
-    String outputFolder;
-
-    @Option(names = {"-n", "--length"}, required = true, description = "length of the provenance chain (highest number of consecutive main activities)")
+    @Option(names = {"-n", "--length"}, required = true, description = "length of the provenance chain")
     public void setProvenanceChainLength(int value) {
         if (value <= 0) {
             throw new ParameterException(spec.commandLine(), "provenanceChainLength must be greater than 0");
@@ -47,7 +44,7 @@ public class GenerateChain implements Runnable {
         provenanceChainLength = value;
     }
 
-    @Option(names = {"-b", "--branching"}, required = true, description = "sum of all (main activities inputs- 1)")
+    @Option(names = {"-b", "--branching"}, required = true, description = "number of forward connectors in the first bundle")
     public void setBranching(int value) {
         if (value < 0) {
             throw new ParameterException(spec.commandLine(), "branching must be greater than 0");
@@ -58,15 +55,19 @@ public class GenerateChain implements Runnable {
     @Option(names = {"-O", "--organization-id",}, required = true)
     String organizationId;
 
-    @Option(names = {"-C", "--certificate-path",}, required = true)
-    String certificatePath;
+    @Option(names = {"-k", "--key-path",}, required = true)
+    String keyPath;
+
+    @Option(names = {"-d", "--directory"}, description = "bundles output directory")
+    String outputFolder;
+
+    @Option(names = {"-g", "--create-graph"}, description = "Creates a graph representation of the bundle. Will be ignored is directory is not set. Requires graphviz to work.")
+    Boolean createGraph;
 
     String storageUrlBaseInternal = "http://prov-storage-hospital:8000/";
 
     @Override
     public void run() {
-        var firstBundleOutputs = branching - provenanceChainLength + 2;
-
         var metaPrefix = "meta";
         var metaUrl = storageUrlBaseInternal + "api/v1/documents/meta/";
 
@@ -97,7 +98,7 @@ public class GenerateChain implements Runnable {
 
             if (outputFolder != null) {
                 var path = outputFolder + doc.getBundleId().getLocalPart();
-                DocumentGenerator.exportDocument(doc.toDocument(), path, true);
+                DocumentGenerator.exportDocument(doc.toDocument(), path, createGraph);
             }
 
             var savedDoc = ProvenanceStorageClient.storeDocument(
@@ -105,7 +106,7 @@ public class GenerateChain implements Runnable {
                 doc.toDocument(),
                 doc.getBundleId().getLocalPart(),
                 organizationId,
-                certificatePath,
+                keyPath,
                 false
             );
 
@@ -137,7 +138,7 @@ public class GenerateChain implements Runnable {
 
                 if (outputFolder != null) {
                     var path = outputFolder + originalId.getLocalPart();
-                    DocumentGenerator.exportDocument(referencedBundle, path, true);
+                    DocumentGenerator.exportDocument(referencedBundle, path, createGraph);
                 }
 
                 ProvenanceStorageClient.storeDocument(
@@ -145,7 +146,7 @@ public class GenerateChain implements Runnable {
                     referencedBundle,
                     referencedBundleId.getLocalPart(),
                     organizationId,
-                    certificatePath,
+                    keyPath,
                     true
                 );
                 var bundle = (Bundle) (referencedBundle.getStatementOrBundle().getFirst());
@@ -252,13 +253,13 @@ public class GenerateChain implements Runnable {
                 doc,
                 bundleId.getLocalPart(),
                 organizationId,
-                certificatePath,
+                keyPath,
                 true
             );
 
             if (outputFolder != null) {
                 var path = outputFolder + entry.getKey().getLocalPart();
-                DocumentGenerator.exportDocument(doc, path, true);
+                DocumentGenerator.exportDocument(doc, path, createGraph);
             }
         }
     }
