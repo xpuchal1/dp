@@ -43,6 +43,7 @@ public class PopulateBundle implements Runnable {
         }
         forwardDistance = value;
     }
+
     int forwardDistance;
 
     @Option(names = {"-b", "--backward-distance"}, defaultValue = "0", description = "distance from the backward connector")
@@ -52,6 +53,7 @@ public class PopulateBundle implements Runnable {
         }
         backwardDistance = value;
     }
+
     int backwardDistance;
 
     @Option(names = {"-e", "--entity-count"}, required = true, description = "number of new entities")
@@ -64,6 +66,7 @@ public class PopulateBundle implements Runnable {
         }
         entityCount = value;
     }
+
     int entityCount;
 
     @Option(names = {"-t", "--type"}, required = true, description = "type")
@@ -73,7 +76,7 @@ public class PopulateBundle implements Runnable {
     String outputFolder;
 
     @Option(names = {"-g", "--create-graph"}, description = "Creates a graph representation of the bundle. Will be ignored is directory is not set. Requires graphviz to work.")
-    Boolean createGraph;
+    boolean createGraph;
 
     @Override
     public void run() {
@@ -148,11 +151,12 @@ public class PopulateBundle implements Runnable {
         var fullBundleId = bundle.getId();
 
         var originalLocalPartPrefix = fullBundleId.getLocalPart().split("-v")[0];
-        bundle.setId(pF.newQualifiedName(
+        var newId = pF.newQualifiedName(
             fullBundleId.getNamespaceURI(),
             originalLocalPartPrefix + "-v" + System.currentTimeMillis(),
-            fullBundleId.getPrefix())
+            fullBundleId.getPrefix()
         );
+        bundle.setId(newId);
 
         ProvenanceStorageClient.storeDocument(
             storageUrlBase,
@@ -164,7 +168,7 @@ public class PopulateBundle implements Runnable {
         );
 
         if (outputFolder != null) {
-            var path = outputFolder + bundleId;
+            var path = outputFolder + newId.getLocalPart();
             DocumentGenerator.exportDocument(doc, path, createGraph);
         }
     }

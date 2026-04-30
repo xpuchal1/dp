@@ -60,9 +60,6 @@ public class ProvenanceStorageClient {
                     throw new RuntimeException(response.body());
                 }
 
-                System.out.println("Status code: " + response.statusCode());
-                System.out.println("Response body: " + response.body());
-
                 ObjectMapper mapper = new ObjectMapper();
                 return mapper.readValue(response.body(), ProvenanceStorageResponse.class);
             }

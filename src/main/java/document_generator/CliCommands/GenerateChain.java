@@ -242,11 +242,12 @@ public class GenerateChain implements Runnable {
             var fullBundleId = bundle.getId();
 
             var originalLocalPartPrefix = fullBundleId.getLocalPart().split("-v")[0];
-            bundle.setId(pF.newQualifiedName(
+            var newId = pF.newQualifiedName(
                 fullBundleId.getNamespaceURI(),
                 originalLocalPartPrefix + "-v" + System.currentTimeMillis(),
-                fullBundleId.getPrefix())
+                fullBundleId.getPrefix()
             );
+            bundle.setId(newId);
 
             ProvenanceStorageClient.storeDocument(
                 storageUrlBase,
@@ -261,7 +262,12 @@ public class GenerateChain implements Runnable {
                 var path = outputFolder + entry.getKey().getLocalPart();
                 DocumentGenerator.exportDocument(doc, path, createGraph);
             }
+            updatedBundleIds.put(entry.getKey(), newId);
         }
+
+        updatedBundleIds.forEach((k, v) -> {
+            System.out.println("The most recent bundle id for " + k.getLocalPart() + " is " + v.getLocalPart());
+        });
     }
 
     private HashMap<QualifiedName, QualifiedName> reverseMapping(HashMap<QualifiedName, List<QualifiedName>> map) {

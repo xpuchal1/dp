@@ -67,9 +67,8 @@ public class DocumentGenerator {
 
         // Generate backward connectors
         var backwardConnectors = bcs.stream().map(data -> {
-            // TODO: Correct sender agent
             var referenceBundleId = data.getReferenceBundleId();
-            var bcAgent = new SenderAgent(pF.newQualifiedName(referenceBundleId.getNamespaceURI(), "Agent" + referenceBundleId.getLocalPart(), referenceBundleId.getPrefix()));
+            var bcAgent = new SenderAgent(pF.newQualifiedName(referenceBundleId.getNamespaceURI(), "SenderAgent-" + referenceBundleId.getLocalPart(), referenceBundleId.getPrefix()));
             ti.getSenderAgents().add(bcAgent);
 
             var previousBundleFc = data.getConnectorId();
@@ -80,7 +79,6 @@ public class DocumentGenerator {
                     fc.setDerivedFrom(new ArrayList<>());
                 }
                 fc.getDerivedFrom().add(previousBundleFc);
-                data.getGeneratedEntityIds().add(previousBundleFc);
             }
 
             bc.setReferencedBundleId(data.getReferenceBundleId());
@@ -93,19 +91,21 @@ public class DocumentGenerator {
         var allConnectors = new ArrayList<>(backwardConnectors);
         rbcs.forEach(data -> {
             var referenceBundleId = data.getReferenceBundleId();
-            var bcAgent = new SenderAgent(pF.newQualifiedName(referenceBundleId.getNamespaceURI(), "Agent" + referenceBundleId.getLocalPart(), referenceBundleId.getPrefix()));
-            ti.getSenderAgents().add(bcAgent);
 
             var previousBundleFc = data.getConnectorId();
             var bc = new BackwardConnector(previousBundleFc);
-            bc.setAttributedTo(new ConnectorAttributed(bcAgent.getId()));
-
-            bc.setDerivedFrom(data.getGeneratedEntityIds());
 
             bc.setReferencedBundleId(data.getReferenceBundleId());
             bc.setReferencedMetaBundleId(data.getReferenceMetaBundleId());
             bc.setReferencedBundleHashValue(data.getReferenceBundleHash());
             bc.setHashAlg(data.getReferenceBundleHashAlgorithm());
+
+            var agentId = pF.newQualifiedName(referenceBundleId.getNamespaceURI(), "SenderAgent-" + referenceBundleId.getLocalPart(), referenceBundleId.getPrefix());
+            bc.setAttributedTo(new ConnectorAttributed(agentId));
+            if (ti.getSenderAgents().stream().noneMatch(a -> a.getId().equals(agentId))) {
+                var agent = new SenderAgent(agentId);
+                ti.getSenderAgents().add(agent);
+            }
 
             allConnectors.add(bc);
         });
@@ -125,7 +125,7 @@ public class DocumentGenerator {
             derived.setDerivedFrom(derivedFrom);
         });
 
-        QualifiedName activityId = pF.newQualifiedName(CpmNamespaceUrl, "bundleActivity" + bundleName, CpmPrefix);
+        QualifiedName activityId = pF.newQualifiedName(CpmNamespaceUrl, "activity-" + bundleName, CpmPrefix);
         var mainActivity = new MainActivity(activityId);
         ti.setMainActivity(mainActivity);
         mainActivity.setGenerated(forwardConnectors.stream().map(Connector::getId).toList());

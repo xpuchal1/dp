@@ -51,7 +51,7 @@ public class RegisterOrganisation implements Runnable {
     @Override
     public void run() {
         organizationId = organizationId == null ? UUID.randomUUID().toString().substring(0, 8) : organizationId;
-        // Need to be checked here, setXXX validation only runs if option is present
+        // Need to be checked here, setXXX validation only runs if the option is present
         if (clientCertificate == null && outputFolder == null) {
             throw new CommandLine.ParameterException(spec.commandLine(), "Client certificate must be set if base path is null");
         }

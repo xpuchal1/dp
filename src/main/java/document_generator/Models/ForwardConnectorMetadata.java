@@ -12,7 +12,6 @@ public class ForwardConnectorMetadata {
     private final QualifiedName referenceMetaBundleId;
     private final String referenceBundleHash;
     private final HashAlgorithms referenceBundleHashAlgorithm;
-    private final List<QualifiedName> generatedEntityIds;
 
     public ForwardConnectorMetadata(QualifiedName connectorId, QualifiedName referenceBundleId, QualifiedName referenceMetaBundleId, String hash, HashAlgorithms referenceBundleHashAlgorithm) {
         this.connectorId = connectorId;
@@ -20,7 +19,6 @@ public class ForwardConnectorMetadata {
         this.referenceMetaBundleId = referenceMetaBundleId;
         this.referenceBundleHash = hash;
         this.referenceBundleHashAlgorithm = referenceBundleHashAlgorithm;
-        this.generatedEntityIds = new ArrayList<>();
     }
 
     public QualifiedName getConnectorId() {
@@ -42,9 +40,4 @@ public class ForwardConnectorMetadata {
     public HashAlgorithms getReferenceBundleHashAlgorithm() {
         return referenceBundleHashAlgorithm;
     }
-
-    public List<QualifiedName> getGeneratedEntityIds() {
-        return generatedEntityIds;
-    }
-
 }
