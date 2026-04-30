@@ -9,10 +9,13 @@ import cz.muni.fi.cpm.template.schema.HashAlgorithms;
 import cz.muni.fi.cpm.vanilla.CpmProvFactory;
 import document_generator.DocumentGenerator;
 import document_generator.Models.ForwardConnectorMetadata;
+import document_generator.Models.ProvenanceStorageResponse;
 import document_generator.ProvenanceStorageClient;
 import org.openprovenance.prov.model.Bundle;
 import org.openprovenance.prov.model.QualifiedName;
 import org.openprovenance.prov.model.Statement;
+import org.openprovenance.prov.vanilla.ProvFactory;
+import picocli.CommandLine;
 import picocli.CommandLine.*;
 
 import java.util.ArrayList;
@@ -28,10 +31,6 @@ public class GenerateChain implements Runnable {
 
     int provenanceChainLength;
     int branching;
-
-    // Prefix of bundle id
-    @Option(names = {"-s", "--storage-base-url"}, required = true, defaultValue = "http://localhost:8001", description = "base url of prov storage")
-    String storageUrlBase;
 
     @Option(names = {"-o", "--bundle-name"}, required = true, description = "Bundle name prefix")
     String bundleNameBase;
@@ -55,7 +54,10 @@ public class GenerateChain implements Runnable {
     @Option(names = {"-O", "--organization-id",}, required = true)
     String organizationId;
 
-    @Option(names = {"-k", "--key-path",}, required = true)
+    @Option(names = {"-s", "--storage-base-url"}, description = "base url of prov storage")
+    String storageUrlBase;
+
+    @Option(names = {"-k", "--key-path",})
     String keyPath;
 
     @Option(names = {"-d", "--directory"}, description = "bundles output directory")
@@ -68,10 +70,18 @@ public class GenerateChain implements Runnable {
 
     @Override
     public void run() {
+        if (storageUrlBase == null && outputFolder == null) {
+            throw new ParameterException(spec.commandLine(), "Storage url base or output folder must be set");
+        }
+
+        if (storageUrlBase != null && keyPath == null) {
+            throw new ParameterException(spec.commandLine(), "Key path must be set if storage url base is set");
+        }
+
         var metaPrefix = "meta";
         var metaUrl = storageUrlBaseInternal + "api/v1/documents/meta/";
 
-        var pF = new org.openprovenance.prov.vanilla.ProvFactory();
+        var pF = new ProvFactory();
         var cPF = new CpmProvFactory(pF);
         var templateProvMapper = new TemplateProvMapper(cPF);
 
@@ -81,8 +91,7 @@ public class GenerateChain implements Runnable {
         var previousConnectors = new ArrayList<ForwardConnectorMetadata>();
         var redundantConnectors = new ArrayList<ForwardConnectorMetadata>();
 
-        // Mapping of original names (on creation) to updated names
-        var updatedBundleIds = new HashMap<QualifiedName, QualifiedName>();
+        var bundles = new HashMap<QualifiedName, CpmDocument>();
 
         for (int i = 0; i < provenanceChainLength; i++) {
             System.out.println("Starting index: " + i);
@@ -94,6 +103,7 @@ public class GenerateChain implements Runnable {
                 redundantConnectors,
                 connectorDerivationMapping
             );
+            bundles.put(doc.getBundleId(), doc);
             redundantConnectors.addAll(previousConnectors);
 
             if (outputFolder != null) {
@@ -101,14 +111,17 @@ public class GenerateChain implements Runnable {
                 DocumentGenerator.exportDocument(doc.toDocument(), path, createGraph);
             }
 
-            var savedDoc = ProvenanceStorageClient.storeDocument(
-                storageUrlBase,
-                doc.toDocument(),
-                doc.getBundleId().getLocalPart(),
-                organizationId,
-                keyPath,
-                false
-            );
+            ProvenanceStorageResponse savedDoc = null;
+            if (storageUrlBase != null) {
+                savedDoc = ProvenanceStorageClient.storeDocument(
+                    storageUrlBase,
+                    doc.toDocument(),
+                    doc.getBundleId().getLocalPart(),
+                    organizationId,
+                    keyPath,
+                    false
+                );
+            }
 
             // Add specialized forward connectors to referenced bundle(s)
             var previousConnectorsIds = previousConnectors.stream().map(ForwardConnectorMetadata::getConnectorId).toList();
@@ -117,23 +130,21 @@ public class GenerateChain implements Runnable {
                 .toList();
 
             for (var bc : nonRedundantBcs) {
-                var referencedBundleId = (QualifiedName) bc.getElements().getFirst().getOther()
+                var originalId = (QualifiedName) bc.getElements().getFirst().getOther()
                     .stream()
                     .filter(o -> o.getElementName().getLocalPart().equals(CpmAttribute.REFERENCED_BUNDLE_ID.toString()))
                     .findFirst().get().getValue();
-                var originalId = referencedBundleId;
-                if (updatedBundleIds.containsKey(referencedBundleId)) {
-                    referencedBundleId = updatedBundleIds.get(referencedBundleId);
-                }
+                var referencedBundleId = bundles.get(originalId).getBundleId();
 
+                var cpmDocument = bundles.get(originalId);
                 var referencedBundle = documentGenerator.addSpecializedForwardConnector(
-                    storageUrlBase,
+                    cpmDocument,
                     bc,
                     organizationId,
-                    referencedBundleId,
                     doc.getBundleId(),
                     pF.newQualifiedName(metaUrl, doc.getBundleId().getLocalPart() + "_meta", metaPrefix),
-                    savedDoc.getToken().getData().getDocumentDigest()
+                    // TODO: Calculate instead of using return value
+                    savedDoc != null ? savedDoc.getToken().getData().getDocumentDigest() : "DUMMY"
                 );
 
                 if (outputFolder != null) {
@@ -141,17 +152,17 @@ public class GenerateChain implements Runnable {
                     DocumentGenerator.exportDocument(referencedBundle, path, createGraph);
                 }
 
-                ProvenanceStorageClient.storeDocument(
-                    storageUrlBase,
-                    referencedBundle,
-                    referencedBundleId.getLocalPart(),
-                    organizationId,
-                    keyPath,
-                    true
-                );
-                var bundle = (Bundle) (referencedBundle.getStatementOrBundle().getFirst());
-
-                updatedBundleIds.put(originalId, bundle.getId());
+                if (storageUrlBase != null) {
+                    ProvenanceStorageClient.storeDocument(
+                        storageUrlBase,
+                        referencedBundle,
+                        referencedBundleId.getLocalPart(),
+                        organizationId,
+                        keyPath,
+                        true
+                    );
+                }
+                bundles.put(originalId, new CpmDocument(referencedBundle, pF, cPF, new CpmOrderedFactory()));
             }
 
             if (!previousConnectors.isEmpty() && !doc.getForwardConnectors().isEmpty()) {
@@ -175,7 +186,8 @@ public class GenerateChain implements Runnable {
                         fc.getId(),
                         doc.getBundleId(),
                         pF.newQualifiedName(metaUrl, doc.getBundleId().getLocalPart() + "_meta", metaPrefix),
-                        savedDoc.getToken().getData().getDocumentDigest(),
+                        // TODO: Calculate instead of using return value
+                        savedDoc != null ? savedDoc.getToken().getData().getDocumentDigest() : "DUMMY",
                         HashAlgorithms.SHA256
                     )
                 );
@@ -188,14 +200,9 @@ public class GenerateChain implements Runnable {
 
         // Add redundant forward connectors
         var reverseConnectorDerivation = reverseMapping(connectorDerivationMapping);
-        for (var entry : updatedBundleIds.entrySet()) {
-            var bundleId = entry.getValue();
-            var document = ProvenanceStorageClient.getDocument(
-                storageUrlBase,
-                organizationId,
-                bundleId.getLocalPart()
-            ).getDocument();
-            var cpmDocument = new CpmDocument(document, pF, cPF, new CpmOrderedFactory());
+        for (var entry : bundles.entrySet()) {
+            var bundleId = entry.getKey();
+            var cpmDocument = entry.getValue();
 
             var statements = new ArrayList<Statement>();
             var processed = new HashSet<QualifiedName>();
@@ -216,8 +223,8 @@ public class GenerateChain implements Runnable {
                         var metadata = metadataOptional.get();
                         var redundantFc = new ForwardConnector();
                         redundantFc.setId(id);
-                        if (updatedBundleIds.containsKey(metadata.getReferenceBundleId())) {
-                            var updatedId = updatedBundleIds.get(metadata.getReferenceBundleId());
+                        if (bundles.containsKey(metadata.getReferenceBundleId())) {
+                            var updatedId = bundles.get(metadata.getReferenceBundleId()).getBundleId();
                             redundantFc.setReferencedBundleId(updatedId);
                         } else {
                             redundantFc.setReferencedBundleId(metadata.getReferenceBundleId());
@@ -249,24 +256,26 @@ public class GenerateChain implements Runnable {
             );
             bundle.setId(newId);
 
-            ProvenanceStorageClient.storeDocument(
-                storageUrlBase,
-                doc,
-                bundleId.getLocalPart(),
-                organizationId,
-                keyPath,
-                true
-            );
+            if (storageUrlBase != null) {
+                ProvenanceStorageClient.storeDocument(
+                    storageUrlBase,
+                    doc,
+                    bundleId.getLocalPart(),
+                    organizationId,
+                    keyPath,
+                    true
+                );
+            }
 
             if (outputFolder != null) {
                 var path = outputFolder + entry.getKey().getLocalPart();
                 DocumentGenerator.exportDocument(doc, path, createGraph);
             }
-            updatedBundleIds.put(entry.getKey(), newId);
+            bundles.put(entry.getKey(), new CpmDocument(doc, pF, cPF, new CpmOrderedFactory()));
         }
 
-        updatedBundleIds.forEach((k, v) -> {
-            System.out.println("The most recent bundle id for " + k.getLocalPart() + " is " + v.getLocalPart());
+        bundles.forEach((k, v) -> {
+            System.out.println("The most recent bundle id for " + k.getLocalPart() + " is " + v.getBundleId().getLocalPart());
         });
     }
 

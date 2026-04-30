@@ -138,10 +138,8 @@ public class DocumentGenerator {
         return new CpmDocument(document, pF, cPF, new CpmOrderedFactory());
     }
 
-    public Document addSpecializedForwardConnector(String urlBase, INode connector, String orgId, QualifiedName bundleId, QualifiedName referencedBundleId, QualifiedName metaId, String hash) {
-        var storedDocument = ProvenanceStorageClient.getDocument(urlBase, orgId, bundleId.getLocalPart());
-        var cpmDocument = new CpmDocument(storedDocument.getDocument(), pF, cPF, new CpmOrderedFactory());
-
+    public Document addSpecializedForwardConnector(CpmDocument cpmDocument, INode connector, String orgId, QualifiedName referencedBundleId, QualifiedName metaId, String hash) {
+        var bundleId = cpmDocument.getBundleId();
         var connectorIdLocal = connector.getId().getLocalPart();
         var fc = cpmDocument
             .getForwardConnectors()
