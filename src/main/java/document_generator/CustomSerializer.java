@@ -3,16 +3,11 @@ package document_generator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import cz.muni.fi.cpm.divided.ordered.CpmOrderedFactory;
-import cz.muni.fi.cpm.vanilla.CpmProvFactory;
 import org.openprovenance.prov.interop.InteropFramework;
 import org.openprovenance.prov.model.*;
 import org.openprovenance.prov.model.interop.Formats;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.*;
 
 public class CustomSerializer {
@@ -23,6 +18,17 @@ public class CustomSerializer {
     public CustomSerializer() {
         this.pF = new org.openprovenance.prov.vanilla.ProvFactory();
         this.interop = new InteropFramework();
+    }
+
+    public Document readDocument(String path) {
+        try (InputStream inputStream = new FileInputStream(path)) {
+            var document = interop.readDocument(inputStream, Formats.ProvFormat.JSON);
+            RenameBundle(document);
+
+            return document;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public String createProvStorageJson(Document doc) throws IOException {
@@ -37,7 +43,7 @@ public class CustomSerializer {
         return json.toString();
     }
 
-    public void removeJsonKeyRecursive(ObjectNode node, String keyToRemove) {
+    private void removeJsonKeyRecursive(ObjectNode node, String keyToRemove) {
         Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
         while (fields.hasNext()) {
             Map.Entry<String, JsonNode> entry = fields.next();
@@ -66,5 +72,14 @@ public class CustomSerializer {
             var innerObj = (ObjectNode) bundle.get(key);
             innerObj.put("@id", key);
         }
+    }
+
+    public static void RenameBundle(Document document) {
+        var bundle = (Bundle) document.getStatementOrBundle().getFirst();
+        var ns = document.getNamespace();
+        var namespaceUri = ns.lookupPrefix(bundle.getId().getPrefix());
+        var pF = new org.openprovenance.prov.vanilla.ProvFactory();
+        var updatedBundleId = pF.newQualifiedName(namespaceUri, bundle.getId().getLocalPart(), bundle.getId().getPrefix());
+        bundle.setId(updatedBundleId);
     }
 }

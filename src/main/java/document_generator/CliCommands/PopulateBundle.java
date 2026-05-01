@@ -3,6 +3,7 @@ package document_generator.CliCommands;
 import cz.muni.fi.cpm.divided.ordered.CpmOrderedFactory;
 import cz.muni.fi.cpm.model.CpmDocument;
 import cz.muni.fi.cpm.vanilla.CpmProvFactory;
+import document_generator.CustomSerializer;
 import document_generator.DocumentGenerator;
 import document_generator.ProvenanceStorageClient;
 import org.openprovenance.prov.model.*;
@@ -20,17 +21,19 @@ public class PopulateBundle implements Runnable {
     @Spec
     Model.CommandSpec spec;
 
-    // Prefix of bundle id
-    @Option(names = {"-s", "--storage-base-url"}, defaultValue = "http://localhost:8001/", description = "base url of prov storage")
+    @Option(names = {"-p", "--bundle-path"}, description = "Path to the bundle stored on folder system.")
+    String bundlePath;
+
+    @Option(names = {"-s", "--storage-base-url"}, description = "base url of prov storage")
     String storageUrlBase;
 
     @Option(names = {"-O", "--organization-id"}, description = "id of the organization")
     String orgId;
 
-    @Option(names = {"-k", "--key-path",}, required = true)
+    @Option(names = {"-k", "--key-path",})
     String keyPath;
 
-    @Option(names = {"-B", "--bundle-id"}, required = true, description = "id of the updated bundle")
+    @Option(names = {"-B", "--bundle-id"}, description = "id of the updated bundle")
     String bundleId;
 
     @Option(names = {"-c", "--connector-id"}, required = true, description = "id of derived forward connector")
@@ -80,12 +83,29 @@ public class PopulateBundle implements Runnable {
 
     @Override
     public void run() {
+        if (bundlePath == null && storageUrlBase == null) {
+            throw new CommandLine.ParameterException(spec.commandLine(), "Storage url base must be set if bundle path is null");
+        }
+
+        if (storageUrlBase != null && (keyPath == null || bundleId == null || orgId == null)) {
+            throw new CommandLine.ParameterException(spec.commandLine(), "Key path and bundle id are required if storage url base is set");
+        }
+
         var pF = new org.openprovenance.prov.vanilla.ProvFactory();
         var cPF = new CpmProvFactory(pF);
         var cpmFactory = new CpmOrderedFactory();
 
-        var document = ProvenanceStorageClient.getDocument(storageUrlBase, orgId, bundleId);
-        var cpmDocument = new CpmDocument(document.getDocument(), pF, cPF, cpmFactory);
+        Document document;
+        if (bundlePath != null) {
+            CustomSerializer serializer = new CustomSerializer();
+            document = serializer.readDocument(bundlePath);
+        } else {
+            document = ProvenanceStorageClient.getDocument(storageUrlBase, orgId, bundleId).getDocument();
+        }
+        var cpmDocument = new CpmDocument(document, pF, cPF, cpmFactory);
+        if (bundleId == null) {
+            bundleId = cpmDocument.getBundleId().getLocalPart();
+        }
 
         var connectorOptional = cpmDocument.getForwardConnectors()
             .stream()
@@ -158,14 +178,16 @@ public class PopulateBundle implements Runnable {
         );
         bundle.setId(newId);
 
-        ProvenanceStorageClient.storeDocument(
-            storageUrlBase,
-            doc,
-            bundleId,
-            orgId,
-            keyPath,
-            true
-        );
+        if (storageUrlBase != null) {
+            ProvenanceStorageClient.storeDocument(
+                storageUrlBase,
+                doc,
+                bundleId,
+                orgId,
+                keyPath,
+                true
+            );
+        }
 
         if (outputFolder != null) {
             var path = outputFolder + newId.getLocalPart();
