@@ -12,6 +12,7 @@ import document_generator.Models.ForwardConnectorMetadata;
 import document_generator.Models.ProvenanceStorageResponse;
 import document_generator.ProvenanceStorageClient;
 import org.openprovenance.prov.model.Bundle;
+import org.openprovenance.prov.model.Document;
 import org.openprovenance.prov.model.QualifiedName;
 import org.openprovenance.prov.model.Statement;
 import org.openprovenance.prov.vanilla.ProvFactory;
@@ -205,24 +206,36 @@ public class GenerateChain implements Runnable {
             var cpmDocument = entry.getValue();
 
             var statements = new ArrayList<Statement>();
-            var processed = new HashSet<QualifiedName>();
+            var created = new HashSet<QualifiedName>();
             cpmDocument.getForwardConnectors().forEach(fc -> {
                 var connectedFc = fc.getId();
 
-                while (reverseConnectorDerivation.containsKey(connectedFc) && !processed.contains(connectedFc)) {
-                    if (!processed.contains(reverseConnectorDerivation.get(connectedFc))) {
-                        var id = reverseConnectorDerivation.get(connectedFc);
+                while (reverseConnectorDerivation.containsKey(connectedFc)
+                    && !created.contains(reverseConnectorDerivation.get(connectedFc))) {
+                    var nextId = reverseConnectorDerivation.get(connectedFc);
+
+                    // Skip creation of redundant fc pointing to subsequent component
+                    if (connectedFc.equals(fc.getId())) {
+                        if (reverseConnectorDerivation.containsKey(nextId)) {
+                            nextId = reverseConnectorDerivation.get(nextId);
+                        } else {
+                            break;
+                        }
+                    }
+
+                    if (!created.contains(nextId)) {
+                        QualifiedName finalNextId = nextId;
                         var metadataOptional = redundantConnectors
                             .stream()
-                            .filter(c -> c.getConnectorId().equals(id))
+                            .filter(c -> c.getConnectorId().equals(finalNextId))
                             .findFirst();
                         if (metadataOptional.isEmpty()) {
-                            throw new RuntimeException("Could not find redundant connector for " + id);
+                            throw new RuntimeException("Could not find redundant connector for " + nextId);
                         }
 
                         var metadata = metadataOptional.get();
                         var redundantFc = new ForwardConnector();
-                        redundantFc.setId(id);
+                        redundantFc.setId(nextId);
                         if (bundles.containsKey(metadata.getReferenceBundleId())) {
                             var updatedId = bundles.get(metadata.getReferenceBundleId()).getBundleId();
                             redundantFc.setReferencedBundleId(updatedId);
@@ -235,11 +248,11 @@ public class GenerateChain implements Runnable {
                         redundantFc.setHashAlg(HashAlgorithms.SHA256);
                         statements.addAll(templateProvMapper.map(redundantFc));
                     }
-                    var wasDerivedFrom = pF.newWasDerivedFrom(reverseConnectorDerivation.get(connectedFc), connectedFc);
+                    var wasDerivedFrom = pF.newWasDerivedFrom(nextId, connectedFc);
                     statements.add(wasDerivedFrom);
 
-                    processed.add(connectedFc);
-                    connectedFc = reverseConnectorDerivation.get(connectedFc);
+                    created.add(nextId);
+                    connectedFc = nextId;
                 }
             });
 
