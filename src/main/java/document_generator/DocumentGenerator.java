@@ -68,12 +68,20 @@ public class DocumentGenerator {
         // Generate backward connectors
         var backwardConnectors = bcs.stream().map(data -> {
             var referenceBundleId = data.getReferenceBundleId();
-            var bcAgent = new SenderAgent(pF.newQualifiedName(referenceBundleId.getNamespaceURI(), "SenderAgent-" + referenceBundleId.getLocalPart(), referenceBundleId.getPrefix()));
-            ti.getSenderAgents().add(bcAgent);
+            var bcAgentId = pF.newQualifiedName(
+                referenceBundleId.getNamespaceURI(),
+                "SenderAgent-" + referenceBundleId.getLocalPart(),
+                referenceBundleId.getPrefix()
+            );
+            var agents = ti.getSenderAgents();
+            if (agents.stream().filter(a -> a.getId().equals(bcAgentId)).findAny().isEmpty()) {
+                var bcAgent = new SenderAgent(bcAgentId);
+                agents.add(bcAgent);
+            }
 
             var previousBundleFc = data.getConnectorId();
             var bc = new BackwardConnector(previousBundleFc);
-            bc.setAttributedTo(new ConnectorAttributed(bcAgent.getId()));
+            bc.setAttributedTo(new ConnectorAttributed(bcAgentId));
             for (var fc : forwardConnectors) {
                 if (fc.getDerivedFrom() == null) {
                     fc.setDerivedFrom(new ArrayList<>());
