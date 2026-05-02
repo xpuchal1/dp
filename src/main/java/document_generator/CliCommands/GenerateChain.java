@@ -234,19 +234,28 @@ public class GenerateChain implements Runnable {
                         }
 
                         var metadata = metadataOptional.get();
-                        var redundantFc = new ForwardConnector();
-                        redundantFc.setId(nextId);
+                        var redundantFc = new ForwardConnector(nextId);
+
+                        var specRedundantFcId = pF.newQualifiedName(
+                            nextId.getNamespaceURI(),
+                            nextId.getLocalPart() + "-spec",
+                            nextId.getPrefix()
+                        );
+                        var specRedundantFc = new ForwardConnector(specRedundantFcId);
                         if (bundles.containsKey(metadata.getReferenceBundleId())) {
                             var updatedId = bundles.get(metadata.getReferenceBundleId()).getBundleId();
-                            redundantFc.setReferencedBundleId(updatedId);
+                            specRedundantFc.setReferencedBundleId(updatedId);
                         } else {
-                            redundantFc.setReferencedBundleId(metadata.getReferenceBundleId());
+                            specRedundantFc.setReferencedBundleId(metadata.getReferenceBundleId());
                         }
-                        redundantFc.setReferencedBundleId(metadata.getReferenceBundleId());
-                        redundantFc.setReferencedMetaBundleId(metadata.getReferenceMetaBundleId());
-                        redundantFc.setReferencedBundleHashValue(metadata.getReferenceBundleHash());
-                        redundantFc.setHashAlg(HashAlgorithms.SHA256);
+                        specRedundantFc.setReferencedBundleId(metadata.getReferenceBundleId());
+                        specRedundantFc.setReferencedMetaBundleId(metadata.getReferenceMetaBundleId());
+                        specRedundantFc.setReferencedBundleHashValue(metadata.getReferenceBundleHash());
+                        specRedundantFc.setHashAlg(HashAlgorithms.SHA256);
+                        specRedundantFc.setSpecializationOf(nextId);
+
                         statements.addAll(templateProvMapper.map(redundantFc));
+                        statements.addAll(templateProvMapper.map(specRedundantFc));
                     }
                     var wasDerivedFrom = pF.newWasDerivedFrom(nextId, connectedFc);
                     statements.add(wasDerivedFrom);
