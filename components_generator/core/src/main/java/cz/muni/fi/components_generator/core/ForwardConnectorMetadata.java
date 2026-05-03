@@ -1,12 +1,9 @@
-package document_generator.Models;
+package cz.muni.fi.components_generator.core;
 
 import cz.muni.fi.cpm.template.schema.HashAlgorithms;
 import org.openprovenance.prov.model.QualifiedName;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class ForwardConnectorMetadata {
+class ForwardConnectorMetadata {
     private final QualifiedName connectorId;
     private final QualifiedName referenceBundleId;
     private final QualifiedName referenceMetaBundleId;

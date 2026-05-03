@@ -1,8 +1,8 @@
-package document_generator.Models;
+package cz.muni.fi.components_generator.core;
 
 import org.openprovenance.prov.model.Document;
 
-public class HashedDocument {
+class HashedDocument {
     private final Document document;
     private final String hash;
 

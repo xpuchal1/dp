@@ -1,9 +1,9 @@
-package document_generator.Models;
+package cz.muni.fi.components_generator.core;
 
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 
-public class CertificateBundle {
+class CertificateBundle {
     private final PrivateKey key;
     private final X509Certificate cert;
 

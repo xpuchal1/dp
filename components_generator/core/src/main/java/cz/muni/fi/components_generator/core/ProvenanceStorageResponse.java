@@ -1,6 +1,6 @@
-package document_generator.Models;
+package cz.muni.fi.components_generator.core;
 
-public class ProvenanceStorageResponse {
+class ProvenanceStorageResponse {
     private Token token;
 
     public Token getToken() {

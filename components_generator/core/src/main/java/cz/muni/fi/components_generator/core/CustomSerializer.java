@@ -1,4 +1,4 @@
-package document_generator;
+package cz.muni.fi.components_generator.core;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,9 +8,12 @@ import org.openprovenance.prov.model.*;
 import org.openprovenance.prov.model.interop.Formats;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
-public class CustomSerializer {
+class CustomSerializer {
 
     public final ProvFactory pF;
     private final InteropFramework interop;
@@ -81,5 +84,15 @@ public class CustomSerializer {
         var pF = new org.openprovenance.prov.vanilla.ProvFactory();
         var updatedBundleId = pF.newQualifiedName(namespaceUri, bundle.getId().getLocalPart(), bundle.getId().getPrefix());
         bundle.setId(updatedBundleId);
+    }
+
+    public static String ProvStorageJsonHash(String documentJson)  {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(documentJson.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hashBytes);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

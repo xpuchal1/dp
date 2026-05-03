@@ -1,9 +1,7 @@
-package document_generator;
+package cz.muni.fi.components_generator.core;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import document_generator.Models.HashedDocument;
-import document_generator.Models.ProvenanceStorageResponse;
 import org.openprovenance.prov.interop.InteropFramework;
 import org.openprovenance.prov.model.Document;
 import org.openprovenance.prov.model.interop.Formats;
@@ -19,7 +17,7 @@ import java.text.MessageFormat;
 import java.time.Instant;
 import java.util.Base64;
 
-public class ProvenanceStorageClient {
+class ProvenanceStorageClient {
     public static ProvenanceStorageResponse storeDocument(String baseUrl, Document document, String bundleId, String orgId, String keyPath, boolean update) {
         try {
             var serializer = new CustomSerializer();

@@ -1,6 +1,5 @@
-package document_generator;
+package cz.muni.fi.components_generator.core;
 
-import document_generator.Models.CertificateBundle;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
@@ -36,7 +35,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Date;
 
-public class Certificates {
+class Certificates {
     static {
         Security.addProvider(new BouncyCastleProvider());
     }

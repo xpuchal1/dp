@@ -1,4 +1,4 @@
-package document_generator.CliCommands;
+package cz.muni.fi.components_generator.core;
 
 import cz.muni.fi.cpm.constants.CpmAttribute;
 import cz.muni.fi.cpm.divided.ordered.CpmOrderedFactory;
@@ -7,76 +7,42 @@ import cz.muni.fi.cpm.template.mapper.TemplateProvMapper;
 import cz.muni.fi.cpm.template.schema.ForwardConnector;
 import cz.muni.fi.cpm.template.schema.HashAlgorithms;
 import cz.muni.fi.cpm.vanilla.CpmProvFactory;
-import document_generator.DocumentGenerator;
-import document_generator.Models.ForwardConnectorMetadata;
-import document_generator.Models.ProvenanceStorageResponse;
-import document_generator.ProvenanceStorageClient;
 import org.openprovenance.prov.model.Bundle;
-import org.openprovenance.prov.model.Document;
 import org.openprovenance.prov.model.QualifiedName;
 import org.openprovenance.prov.model.Statement;
 import org.openprovenance.prov.vanilla.ProvFactory;
-import picocli.CommandLine;
-import picocli.CommandLine.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
-
-@Command(name = "generate-chain", description = "Generates a CPM provenance chain")
-public class GenerateChain implements Runnable {
-    @Spec
-    Model.CommandSpec spec;
-
-    int provenanceChainLength;
-    int branching;
-
-    @Option(names = {"-o", "--bundle-name"}, required = true, description = "Bundle name prefix")
-    String bundleNameBase;
-
-    @Option(names = {"-n", "--length"}, required = true, description = "length of the provenance chain")
-    public void setProvenanceChainLength(int value) {
-        if (value <= 0) {
-            throw new ParameterException(spec.commandLine(), "provenanceChainLength must be greater than 0");
+class GenerateChain {
+    public static void Execute(
+        int provenanceChainLength,
+        int branching,
+        String bundleNameBase,
+        String organizationId,
+        String storageUrlBase,
+        String keyPath,
+        String outputFolder,
+        boolean createGraph,
+        String storageUrlBaseInternal
+    ) {
+        if (provenanceChainLength <= 0) {
+            throw new RuntimeException("Provenance chain length must be a positive integer");
         }
-        provenanceChainLength = value;
-    }
 
-    @Option(names = {"-b", "--branching"}, required = true, description = "number of forward connectors in the first bundle")
-    public void setBranching(int value) {
-        if (value < 0) {
-            throw new ParameterException(spec.commandLine(), "branching must be greater than 0");
+        if (branching <= 0) {
+            throw new RuntimeException("Branching must be a positive integer");
         }
-        branching = value;
-    }
 
-    @Option(names = {"-O", "--organization-id",}, required = true)
-    String organizationId;
-
-    @Option(names = {"-s", "--storage-base-url"}, description = "base url of prov storage")
-    String storageUrlBase;
-
-    @Option(names = {"-k", "--key-path",})
-    String keyPath;
-
-    @Option(names = {"-d", "--directory"}, description = "bundles output directory")
-    String outputFolder;
-
-    @Option(names = {"-g", "--create-graph"}, description = "Creates a graph representation of the bundle. Will be ignored is directory is not set. Requires graphviz to work.")
-    Boolean createGraph;
-
-    String storageUrlBaseInternal = "http://prov-storage-hospital:8000/";
-
-    @Override
-    public void run() {
         if (storageUrlBase == null && outputFolder == null) {
-            throw new ParameterException(spec.commandLine(), "Storage url base or output folder must be set");
+            throw new RuntimeException("Storage url base or output folder must be set.");
         }
 
         if (storageUrlBase != null && keyPath == null) {
-            throw new ParameterException(spec.commandLine(), "Key path must be set if storage url base is set");
+            throw new RuntimeException("Key path must be set if storage url base is set.");
         }
 
         var metaPrefix = "meta";
@@ -141,7 +107,6 @@ public class GenerateChain implements Runnable {
                 var referencedBundle = documentGenerator.addSpecializedForwardConnector(
                     cpmDocument,
                     bc,
-                    organizationId,
                     doc.getBundleId(),
                     pF.newQualifiedName(metaUrl, doc.getBundleId().getLocalPart() + "_meta", metaPrefix),
                     // TODO: Calculate instead of using return value
@@ -301,7 +266,7 @@ public class GenerateChain implements Runnable {
         });
     }
 
-    private HashMap<QualifiedName, QualifiedName> reverseMapping(HashMap<QualifiedName, List<QualifiedName>> map) {
+    private static HashMap<QualifiedName, QualifiedName> reverseMapping(HashMap<QualifiedName, List<QualifiedName>> map) {
         var result = new HashMap<QualifiedName, QualifiedName>();
         for (var entry : map.entrySet()) {
             entry.getValue().forEach(q -> result.put(q, entry.getKey()));

@@ -4,9 +4,27 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.example</groupId>
-    <artifactId>provenance-testing</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <groupId>cz.muni.fi.components_generator</groupId>
+    <artifactId>components_generator</artifactId>
+    <version>1.0.0</version>
+
+    <organization>
+        <name>Masaryk University</name>
+        <url>https://www.muni.cz/</url>
+    </organization>
+    <inceptionYear>2025</inceptionYear>
+    <developers>
+        <developer>
+            <id>492791</id>
+            <name>Daniel Puchala</name>
+        </developer>
+    </developers>
+
+    <modules>
+        <module>cli</module>
+        <module>core</module>
+    </modules>
+    <packaging>pom</packaging>
 
     <properties>
         <maven.compiler.source>23</maven.compiler.source>
@@ -25,7 +43,7 @@
                         <id>install-core</id>
                         <phase>clean</phase>
                         <configuration>
-                            <file>${project.basedir}/src/main/resources/cpm-core-1.0.0.jar</file>
+                            <file>cli/src/main/resources/cpm-core-1.0.0.jar</file>
                             <groupId>cz.muni.fi.cpm</groupId>
                             <artifactId>cpm-core</artifactId>
                             <version>1.0.0</version>
@@ -40,7 +58,7 @@
                         <id>install-template</id>
                         <phase>clean</phase>
                         <configuration>
-                            <file>${project.basedir}/src/main/resources/cpm-template-1.0.0.jar</file>
+                            <file>cli/src/main/resources/cpm-template-1.0.0.jar</file>
                             <groupId>cz.muni.fi.cpm</groupId>
                             <artifactId>cpm-template</artifactId>
                             <version>1.0.0</version>
@@ -74,7 +92,7 @@
                             </filters>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>document_generator.Main</mainClass>
+                                    <mainClass>cz.muni.fi.components_generator.core.Main</mainClass>
                                 </transformer>
                             </transformers>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
@@ -84,50 +102,5 @@
             </plugin>
         </plugins>
     </build>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.openprovenance.prov</groupId>
-            <artifactId>prov-model</artifactId>
-            <version>2.2.1</version>
-        </dependency>
-        <dependency>
-            <groupId>cz.muni.fi.cpm</groupId>
-            <artifactId>cpm-core</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.openprovenance.prov</groupId>
-            <artifactId>prov-interop</artifactId>
-            <version>2.2.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.openprovenance.prov</groupId>
-            <artifactId>prov-nf</artifactId>
-            <version>2.2.1</version>
-        </dependency>
-        <dependency>
-            <groupId>cz.muni.fi.cpm</groupId>
-            <artifactId>cpm-template</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>info.picocli</groupId>
-            <artifactId>picocli</artifactId>
-            <version>4.7.7</version>
-        </dependency>
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk18on</artifactId>
-            <version>1.79</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk18on</artifactId>
-            <version>1.79</version>
-        </dependency>
-    </dependencies>
-
 </project>
 

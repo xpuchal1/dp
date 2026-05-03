@@ -1,9 +1,6 @@
-package document_generator;
+package cz.muni.fi.components_generator.cli;
 
-import document_generator.CliCommands.GenerateCertificates;
-import document_generator.CliCommands.GenerateChain;
-import document_generator.CliCommands.PopulateBundle;
-import document_generator.CliCommands.RegisterOrganisation;
+import cz.muni.fi.components_generator.cli.CliCommands.*;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -13,7 +10,6 @@ import picocli.CommandLine;
         GenerateChain.class,
         PopulateBundle.class,
         RegisterOrganisation.class,
-        GenerateCertificates.class,
     }
 )
 public class Main implements Runnable {

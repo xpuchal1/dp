@@ -1,4 +1,4 @@
-package document_generator;
+package cz.muni.fi.components_generator.core;
 
 import cz.muni.fi.cpm.divided.ordered.CpmOrderedFactory;
 import cz.muni.fi.cpm.model.CpmDocument;
@@ -7,7 +7,6 @@ import cz.muni.fi.cpm.model.INode;
 import cz.muni.fi.cpm.template.mapper.TemplateProvMapper;
 import cz.muni.fi.cpm.template.schema.*;
 import cz.muni.fi.cpm.vanilla.CpmProvFactory;
-import document_generator.Models.ForwardConnectorMetadata;
 import org.openprovenance.prov.interop.InteropFramework;
 import org.openprovenance.prov.model.Bundle;
 import org.openprovenance.prov.model.Document;
@@ -19,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class DocumentGenerator {
+class DocumentGenerator {
     private final String CpmNamespaceUrl = "https://www.commonprovenancemodel.org/cpm-namespace-v1-0/";
     private final String CpmPrefix = "cpm";
     private final String MetaUrl;
@@ -146,7 +145,7 @@ public class DocumentGenerator {
         return new CpmDocument(document, pF, cPF, new CpmOrderedFactory());
     }
 
-    public Document addSpecializedForwardConnector(CpmDocument cpmDocument, INode connector, String orgId, QualifiedName referencedBundleId, QualifiedName metaId, String hash) {
+    public Document addSpecializedForwardConnector(CpmDocument cpmDocument, INode connector, QualifiedName referencedBundleId, QualifiedName metaId, String hash) {
         var bundleId = cpmDocument.getBundleId();
         var connectorIdLocal = connector.getId().getLocalPart();
         var fc = cpmDocument
@@ -157,7 +156,7 @@ public class DocumentGenerator {
             .get();
 
         var spec_fc = new ForwardConnector();
-        spec_fc.setId(pF.newQualifiedName(CpmNamespaceUrl, connectorIdLocal + "-spec-" + orgId, CpmPrefix));
+        spec_fc.setId(pF.newQualifiedName(CpmNamespaceUrl, connectorIdLocal + "-spec", CpmPrefix));
         spec_fc.setReferencedBundleId(referencedBundleId);
         spec_fc.setReferencedMetaBundleId(metaId);
         spec_fc.setReferencedBundleHashValue(hash);
