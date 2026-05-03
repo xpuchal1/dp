@@ -62,8 +62,8 @@ class GenerateChain {
 
         for (int i = 0; i < provenanceChainLength; i++) {
             System.out.println("Starting index: " + i);
-            var documentGenerator = new DocumentGenerator(storageUrlBaseInternal, organizationId);
-            var doc = documentGenerator.createDocument(
+            var documentGenerator = new ComponentGenerator(storageUrlBaseInternal, organizationId);
+            var doc = documentGenerator.createBundle(
                 bundleNameBase + i,
                 i == 0 ? branching : 1,
                 previousConnectors,
@@ -75,7 +75,7 @@ class GenerateChain {
 
             if (outputFolder != null) {
                 var path = outputFolder + doc.getBundleId().getLocalPart();
-                DocumentGenerator.exportDocument(doc.toDocument(), path, createGraph);
+                ComponentGenerator.exportDocument(doc.toDocument(), path, createGraph);
             }
 
             ProvenanceStorageResponse savedDoc = null;
@@ -115,7 +115,7 @@ class GenerateChain {
 
                 if (outputFolder != null) {
                     var path = outputFolder + originalId.getLocalPart();
-                    DocumentGenerator.exportDocument(referencedBundle, path, createGraph);
+                    ComponentGenerator.exportDocument(referencedBundle, path, createGraph);
                 }
 
                 if (storageUrlBase != null) {
@@ -256,7 +256,7 @@ class GenerateChain {
 
             if (outputFolder != null) {
                 var path = outputFolder + entry.getKey().getLocalPart();
-                DocumentGenerator.exportDocument(doc, path, createGraph);
+                ComponentGenerator.exportDocument(doc, path, createGraph);
             }
             bundles.put(entry.getKey(), new CpmDocument(doc, pF, cPF, new CpmOrderedFactory()));
         }

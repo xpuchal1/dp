@@ -131,7 +131,7 @@ class PopulateBundle {
 
         if (outputFolder != null) {
             var path = outputFolder + newId.getLocalPart();
-            DocumentGenerator.exportDocument(doc, path, createGraph);
+            ComponentGenerator.exportDocument(doc, path, createGraph);
         }
     }
 

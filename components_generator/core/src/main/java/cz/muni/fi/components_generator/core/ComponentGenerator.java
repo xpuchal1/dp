@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-class DocumentGenerator {
+class ComponentGenerator {
     private final String CpmNamespaceUrl = "https://www.commonprovenancemodel.org/cpm-namespace-v1-0/";
     private final String CpmPrefix = "cpm";
     private final String MetaUrl;
@@ -30,7 +30,7 @@ class DocumentGenerator {
     private final ICpmProvFactory cPF;
     private final TemplateProvMapper templateProvMapper;
 
-    public DocumentGenerator(String storageUrlBase, String orgId) {
+    public ComponentGenerator(String storageUrlBase, String orgId) {
         MetaUrl = storageUrlBase + "api/v1/documents/meta/";
         StorageUrl = storageUrlBase + "api/v1/organizations/" + orgId + "/documents/";
 
@@ -39,7 +39,7 @@ class DocumentGenerator {
         templateProvMapper = new TemplateProvMapper(cPF);
     }
 
-    public CpmDocument createDocument(
+    public CpmDocument createBundle(
         String bundleName,
         int fcCount,
         List<ForwardConnectorMetadata> bcs,
