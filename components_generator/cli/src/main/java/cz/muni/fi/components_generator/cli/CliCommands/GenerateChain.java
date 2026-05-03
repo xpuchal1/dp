@@ -14,7 +14,7 @@ public class GenerateChain implements Runnable {
     @Option(names = {"-o", "--bundle-name"}, required = true, description = "Bundle name prefix")
     String bundleNameBase;
 
-    @Option(names = {"-n", "--length"}, required = true, description = "length of the provenance chain")
+    @Option(names = {"-l", "--length"}, required = true, description = "length of the provenance chain")
     public void setProvenanceChainLength(int value) {
         if (value <= 0) {
             throw new ParameterException(spec.commandLine(), "provenanceChainLength must be greater than 0");
