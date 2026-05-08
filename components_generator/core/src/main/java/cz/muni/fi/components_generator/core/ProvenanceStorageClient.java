@@ -18,11 +18,8 @@ import java.time.Instant;
 import java.util.Base64;
 
 class ProvenanceStorageClient {
-    public static ProvenanceStorageResponse storeDocument(String baseUrl, Document document, String bundleId, String orgId, String keyPath, boolean update) {
+    public static void storeDocument(String baseUrl, String documentJson, String bundleId, String orgId, String keyPath, boolean update) {
         try {
-            var serializer = new CustomSerializer();
-            var documentJson = serializer.createProvStorageJson(document);
-
             ObjectMapper objectMapper = new ObjectMapper();
 
             var base64doc = Base64.getEncoder().encodeToString(documentJson.getBytes());
@@ -55,9 +52,6 @@ class ProvenanceStorageClient {
                 if (response.statusCode() < 200 || response.statusCode() >= 300) {
                     throw new RuntimeException(response.body());
                 }
-
-                ObjectMapper mapper = new ObjectMapper();
-                return mapper.readValue(response.body(), ProvenanceStorageResponse.class);
             }
         } catch (Exception e) {
             System.err.println(e.getMessage());

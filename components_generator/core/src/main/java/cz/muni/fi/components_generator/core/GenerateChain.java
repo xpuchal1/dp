@@ -51,6 +51,7 @@ class GenerateChain {
         var pF = new ProvFactory();
         var cPF = new CpmProvFactory(pF);
         var templateProvMapper = new TemplateProvMapper(cPF);
+        var serializer = new CustomSerializer();
 
         // Mapping of backward connector and forward connector derived from it
         var connectorDerivationMapping = new HashMap<QualifiedName, List<QualifiedName>>();
@@ -70,6 +71,7 @@ class GenerateChain {
                 redundantConnectors,
                 connectorDerivationMapping
             );
+            var documentJson = serializer.createProvStorageJson(doc.toDocument());
             bundles.put(doc.getBundleId(), doc);
             redundantConnectors.addAll(previousConnectors);
 
@@ -78,11 +80,10 @@ class GenerateChain {
                 ComponentGenerator.exportDocument(doc.toDocument(), path, createGraph);
             }
 
-            ProvenanceStorageResponse savedDoc = null;
             if (storageUrlBase != null) {
-                savedDoc = ProvenanceStorageClient.storeDocument(
+                ProvenanceStorageClient.storeDocument(
                     storageUrlBase,
-                    doc.toDocument(),
+                    documentJson,
                     doc.getBundleId().getLocalPart(),
                     organizationId,
                     keyPath,
@@ -109,9 +110,9 @@ class GenerateChain {
                     bc,
                     doc.getBundleId(),
                     pF.newQualifiedName(metaUrl, doc.getBundleId().getLocalPart() + "_meta", metaPrefix),
-                    // TODO: Calculate instead of using return value
-                    savedDoc != null ? savedDoc.getToken().getData().getDocumentDigest() : "DUMMY"
+                    CustomSerializer.ProvStorageJsonHash(documentJson)
                 );
+                var referenceBundleJson  = serializer.createProvStorageJson(referencedBundle);
 
                 if (outputFolder != null) {
                     var path = outputFolder + originalId.getLocalPart();
@@ -121,7 +122,7 @@ class GenerateChain {
                 if (storageUrlBase != null) {
                     ProvenanceStorageClient.storeDocument(
                         storageUrlBase,
-                        referencedBundle,
+                        referenceBundleJson,
                         referencedBundleId.getLocalPart(),
                         organizationId,
                         keyPath,
@@ -152,8 +153,7 @@ class GenerateChain {
                         fc.getId(),
                         doc.getBundleId(),
                         pF.newQualifiedName(metaUrl, doc.getBundleId().getLocalPart() + "_meta", metaPrefix),
-                        // TODO: Calculate instead of using return value
-                        savedDoc != null ? savedDoc.getToken().getData().getDocumentDigest() : "DUMMY",
+                        CustomSerializer.ProvStorageJsonHash(documentJson),
                         HashAlgorithms.SHA256
                     )
                 );
@@ -242,11 +242,12 @@ class GenerateChain {
                 fullBundleId.getPrefix()
             );
             bundle.setId(newId);
+            var docJson = serializer.createProvStorageJson(doc);
 
             if (storageUrlBase != null) {
                 ProvenanceStorageClient.storeDocument(
                     storageUrlBase,
-                    doc,
+                    docJson,
                     bundleId.getLocalPart(),
                     organizationId,
                     keyPath,

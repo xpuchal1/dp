@@ -118,10 +118,13 @@ class PopulateBundle {
         );
         bundle.setId(newId);
 
+        var serializer = new CustomSerializer();
+        var documentJson = serializer.createProvStorageJson(doc);
+
         if (storageUrlBase != null) {
             ProvenanceStorageClient.storeDocument(
                 storageUrlBase,
-                doc,
+                documentJson,
                 bundleId,
                 orgId,
                 keyPath,

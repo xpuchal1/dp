@@ -34,16 +34,22 @@ class CustomSerializer {
         }
     }
 
-    public String createProvStorageJson(Document doc) throws IOException {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        interop.writeDocument(outputStream, doc, Formats.ProvFormat.JSON);
+    public String createProvStorageJson(Document doc){
+        try {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            interop.writeDocument(outputStream, doc, Formats.ProvFormat.JSON);
 
-        InputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
-        ObjectMapper mapper = new ObjectMapper();
-        var json = mapper.readTree(inputStream);
-        removeJsonKeyRecursive((ObjectNode) json, "@id");
+            InputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+            ObjectMapper mapper = new ObjectMapper();
 
-        return json.toString();
+            JsonNode json = mapper.readTree(inputStream);
+            removeJsonKeyRecursive((ObjectNode) json, "@id");
+
+            return json.toString();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     private void removeJsonKeyRecursive(ObjectNode node, String keyToRemove) {
