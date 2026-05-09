@@ -151,42 +151,23 @@ The `generate-chain` command creates a series of interconnected Common Provenanc
 #### Usage
 
 ```bash
-generate-chain -s <storage-url> -o <bundle-name> -d <output-dir> -n <length> -b <branching> -O <org-id> -C <cert-path>
+generate-chain -s <storage-url> -o <bundle-name> -d <output-dir> -L <length> -b <branching> -O <org-id> -C <cert-path>
 ```
 
-#### Required Options
+#### Options
 
-- `-s, --storage-base-url <url>`  
-  Base URL of the provenance storage service  
-  Default: `http://prov-storage-hospital:8000/`
-
-- `-o, --bundle-name <name>`  
-  Base name for generated bundles (will be suffixed with index numbers)  
-  Default: `test`
-
-- `-d, --directory <path>`  
-  Output directory for saving bundle files locally (JSON and SVG formats)
-
-- `-g, --create-graph`
-  Create a svg file with graph representation of the document. Ignored if directory is not passed. Requires graphviz. 
-
-- `-n, --length <number>`  
-  Length of the provenance chain (number of consecutive main activities)  
-  Must be greater than 0
-
-- `-b, --branching <number>`  
-  Sum of all (main activity inputs - 1), controls the branching structure  
-  Must be greater than or equal to 0
-
-- `-O, --organization-id <id>`  
-  ID of the organization creating the provenance chain
-
-- `-k, --key-path <path>`  
-  Path to the certificate file used for signing documents
+- `"-o", "–bundle-name"` - Required attribute. Prefix of names of the created bundles. The bundle name will be a combination of this prefix and the distance of the bundle from the beginning of the provenance chain. The other named traversal information, such as forward connectors or the main activity, is then derived from the bundle’s name.
+- `"-L", "–length"` - Required attribute, must be an integer greater than 0. Determines the length of the provenance chain and the number of generated bundles.
+- `"-b", "–branching"` - Required attribute, must be an integer greater than 0. Determines the number of forward connectors in the bundle at the beginning of the chain. The forward connectors will be used as input to the subsequent main activity
+- `"-O", "–organization-id"` - Required attribute. Identifier of the organisation under which the generated bundles will be stored.
+- `"-s", "–storage-base-url"` - URI of the CPF store where generated bundles will be stored. Required if directory option is not set.
+- `"-k", "–key-path"` - Path to the signing key associated with the certificate associated with the registered organisation. It is needed to successfully store the created and updated bundles in the CPF store. Required if storage base url is set.
+- `"-d", "–directory"` - The path to a directory, where a JSON serialisation of the bundle will be stored. Required if storage base url option is not set.
+- `"-g", "–create-graph"` - Boolean option. Controls whether a visual representation of the given bundle will be created in the output directory. It is ignored if the output directory is not set. Requires graphviz installed
 
 #### Validation Rules
 
-- Chain length (`-n`) must be greater than 0
+- Chain length (`L`) must be greater than 0
 - Branching factor (`-b`) must be greater than or equal to 0
 - All required paths (certificate, output directory) must be accessible
 
@@ -199,7 +180,7 @@ generate-chain \
   -s http://localhost:8000/ \
   -o medical-procedure \
   -d ./output/bundles/ \
-  -n 5 \
+  -L 5 \
   -b 4 \
   -O hospital-org-001 \
   -k ./certs/hospital.key
@@ -212,7 +193,7 @@ generate-chain \
   -s https://prov-storage.example.com/ \
   -o experiment \
   -d /var/data/provenance/ \
-  -n 10 \
+  -L 10 \
   -b 15 \
   -O research-lab-42 \
   -k ./certs/lab-cert.key
@@ -263,48 +244,20 @@ The `populate-bundle` command adds entities to an existing Common Provenance Mod
 populate-bundle -B <bundle-id> -c <connector-id> -e <entity-count> -t <type> -C <cert-path> [options]
 ```
 
-#### Required Options
+#### Options
 
-- `-B, --bundle-id <id>`  
-  ID of the bundle to be updated
-
-- `-c, --connector-id <id>`  
-  ID of the forward connector from which entities will be derived
-
-- `-e, --entity-count <number>`  
-  Number of new entities to create  
-  Must be greater than 0 and greater than the sum of forward and backward distances
-
-- `-t, --type <type>`  
-  Type of the main entity (e.g., "Patient", "Procedure", "Measurement")  
-  This type will be assigned to the entity at the forward distance position
-
-- `-k, --key-path <path>`  
-  Path to the certificate file used for signing the updated document
-
-#### Optional Options
-
-- `-s, --storage-base-url <url>`  
-  Base URL of the provenance storage service  
-  Default: `http://prov-storage-hospital:8000/`
-
-- `-O, --organization-id <id>`  
-  ID of the organization  
-  Default: `XXXXXXXX`
-
-- `-f, --forward-distance <number>`  
-  Distance (number of entities) from the forward connector to the typed entity  
-  Default: `0` (randomly determined if not specified)
-
-- `-b, --backward-distance <number>`  
-  Distance (number of entities) from the typed entity to the backward connector  
-  Default: `0` (randomly determined if not specified)
-
-- `-d, --directory <path>`  
-  Output directory for saving bundle files locally (JSON and SVG formats)
-
-- `-g, --create-graph`
-  Create a svg file with graph representation of the document. Ignored if directory is not passed. Requires graphviz.
+- `"-p", "--bundle-path"` - Path to a bundle stored in the file system in json format. Required if storage base url is not set.
+- `"-s", "--storage-base-url"` - URI of the CPF store, where the bundle to update is stored. The bundle is loaded from the file system if bundle path is set, however, the updated version is still uploaded to CPF store. Required if bundle path is not set.
+- `"-O", "--organization-id"` - Identifier of the organisation under which the bundle to update is stored. Required if storage base url is set.
+- `"-k", "--key-path"` - Path to the signing key of the organisation under which the bundle to update is stored. Needed for the successful update of the bundle. Required if storage base url is set.
+- `"-B", "--bundle-id"` - Required attribute. Identifier of the bundle to update.
+- `"-c", "--connector-id"` - Required attribute. Identifier of the forward connector, to which a derivation path should be created.
+- `"-t", "--type"` - Required attribute. Determines the type of the special entity.
+- `"-f", "--forward-distance"` - Length of the derivation path from "type" entity to the forward connector. Must be a positive integer.
+- `"-b", "--backward-distance"` - Length of the derivation path from the related backward connector to the "type" entity. Must be a positive integer. Value is ignored if the forward connectors derive from no backward connectors.
+- `"-e", "--entity-count"` - Required attribute. Must be greater than 0. Must be greater than or equal to the sum of the backward distance and forward distance. Total count of the created entities.
+- `"-d", "--directory"` - The path to a directory, where a JSON serialisation of the bundle will be stored.
+- `"-g", "--create-graph"` - Boolean option. Controls whether a visual representation of the given bundle will be created at the output directory. It is ignored if the output directory is not set. Requires Graphviz to be installed.
 
 #### Validation Rules
 
@@ -467,7 +420,7 @@ generate-chain \
   -s http://localhost:8000/ \
   -o patient-journey \
   -d ./provenance-output/ \
-  -n 5 \
+  -L 5 \
   -b 4 \
   -O hospital-001 \
   -C ./org-data/certificates/hospital-001.pem
@@ -537,7 +490,7 @@ generate-chain \
   -s https://research-prov.example.com/ \
   -o experiment-2024 \
   -d ./experiments/ \
-  -n 8 \
+  -L 8 \
   -b 12 \
   -O research-lab-42 \
   -C ./research-org/certificates/research-lab-42.pem
