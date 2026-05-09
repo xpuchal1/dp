@@ -39,9 +39,9 @@ Run the following commands from the `dbprov-master/` directory
 - `docker build -f Dockerfile.TrustedParty -t dbprov-trusted-party .`
 - `docker compose up -d`
 Build the java CLI in the root directory
-- `mvn package`
+- `mvn package -f ./components_generator/pom.xml`
 Run the desired command with necessary options
-- `java -jar .\target\provenance-testing-1.0-SNAPSHOT.jar <command> <options>`
+- `java -jar ./components_generator/cli/target/cli-1.0.0.jar <command> <options>`
 
 ## Commands
 
