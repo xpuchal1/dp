@@ -14,6 +14,8 @@ import org.openprovenance.prov.model.ProvFactory;
 import org.openprovenance.prov.model.QualifiedName;
 import org.openprovenance.prov.model.interop.Formats;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -173,6 +175,13 @@ class ComponentGenerator {
     }
 
     public static void exportDocument(Document document, String path, boolean createSvg) {
+        var jsonFile = Path.of(path + ".json");
+        try {
+            Files.createDirectories(jsonFile.getParent());
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to create directory");
+        }
+
         InteropFramework interop = new InteropFramework();
         interop.writeDocument(path + ".json", document, Formats.ProvFormat.JSON);
         if (createSvg) {
